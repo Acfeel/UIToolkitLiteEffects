@@ -67,7 +67,10 @@ namespace Acfeel.UIToolkitLiteEffects
                 Duration = duration < 0f ? 0f : duration
             };
             sequence.Append(definition);
-            return new LiteEffectTween(element, sequence, definition);
+            var playback = new LiteEffectTweenPlayback(element, sequence);
+            var tween = new LiteEffectTween(playback, definition);
+            playback.ScheduleAutoPlay();
+            return tween;
         }
     }
 }

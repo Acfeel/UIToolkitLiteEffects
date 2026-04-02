@@ -66,7 +66,7 @@ icon.SetGradient(new GradientSettings
 icon.ClearLiteEffect();
 ```
 
-チェーン式 Tween も利用できます。更新は `VisualElement.schedule` ベースで、`Coroutine` を使いません。
+チェーン式 Tween も利用できます。更新は `VisualElement.schedule` ベースで、`Coroutine` を使いません。作成した時点で自動再生されるので、`Play` は不要です。
 
 ```csharp
 icon
@@ -82,7 +82,7 @@ icon
         Angle = 120f
     }, 0.45f).SetEase(LiteEffectEase.InOutSine))
     .OnComplete(() => Debug.Log("LiteEffect tween completed."))
-    .Play();
+;
 ```
 
 USS カスタムプロパティだけを使いたい場合は、空の設定でコントローラだけ有効化してください。
@@ -123,4 +123,4 @@ icon.SetLiteEffect(new LiteEffectSettings());
 - 角丸や複雑なマスクには未対応です
 - テキストグリフそのものの加工ではなく、要素の矩形描画レイヤーに対する効果です
 - `backgroundImage` の元画像を動的に差し替えた場合は `LiteEffectHandle.Refresh()` または再設定を呼ぶと確実です
-- v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Play` `Kill` に限定しています
+- v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` に限定しています

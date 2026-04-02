@@ -18,60 +18,57 @@ namespace Acfeel.UIToolkitLiteEffects
 
     public sealed class LiteEffectTween
     {
-        private readonly VisualElement element;
-        private readonly LiteEffectTweenSequenceDefinition sequence;
+        private readonly LiteEffectTweenPlayback playback;
         private readonly LiteEffectTweenDefinition definition;
 
-        internal LiteEffectTween(VisualElement element, LiteEffectTweenSequenceDefinition sequence, LiteEffectTweenDefinition definition)
+        internal LiteEffectTween(LiteEffectTweenPlayback playback, LiteEffectTweenDefinition definition)
         {
-            this.element = element;
-            this.sequence = sequence;
+            this.playback = playback;
             this.definition = definition;
         }
 
-        internal VisualElement Element => element;
+        internal VisualElement Element => playback.Element;
 
         internal LiteEffectTweenDefinition Definition => definition;
 
         public LiteEffectTween SetEase(LiteEffectEase ease)
         {
             definition.Ease = ease;
+            playback.NotifySequenceChanged();
             return this;
         }
 
         public LiteEffectTween SetDelay(float seconds)
         {
             definition.Delay = Mathf.Max(0f, seconds);
+            playback.NotifySequenceChanged();
             return this;
         }
 
         public LiteEffectTween OnComplete(Action callback)
         {
-            sequence.OnComplete += callback;
+            playback.Sequence.OnComplete += callback;
+            playback.NotifySequenceChanged();
             return this;
         }
 
         public LiteEffectSequence Append(LiteEffectTween tween)
         {
-            sequence.Append(CloneTweenDefinition(tween));
-            return new LiteEffectSequence(element, sequence);
+            playback.Sequence.Append(CloneTweenDefinition(tween));
+            playback.NotifySequenceChanged();
+            return new LiteEffectSequence(playback);
         }
 
         public LiteEffectSequence Join(LiteEffectTween tween)
         {
-            sequence.Join(CloneTweenDefinition(tween));
-            return new LiteEffectSequence(element, sequence);
-        }
-
-        public LiteEffectTween Play()
-        {
-            LiteEffectControllerRegistry.GetOrCreate(element).PlayTweenSequence(sequence.Clone());
-            return this;
+            playback.Sequence.Join(CloneTweenDefinition(tween));
+            playback.NotifySequenceChanged();
+            return new LiteEffectSequence(playback);
         }
 
         public void Kill()
         {
-            LiteEffectControllerRegistry.GetOrCreate(element).KillActiveTween(false);
+            playback.Kill();
         }
 
         private LiteEffectTweenDefinition CloneTweenDefinition(LiteEffectTween tween)
@@ -81,7 +78,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 throw new ArgumentNullException(nameof(tween));
             }
 
-            if (tween.Element != element)
+            if (tween.Element != playback.Element)
             {
                 throw new InvalidOperationException("LiteEffectTween can only append tweens that target the same VisualElement.");
             }
@@ -92,42 +89,37 @@ namespace Acfeel.UIToolkitLiteEffects
 
     public sealed class LiteEffectSequence
     {
-        private readonly VisualElement element;
-        private readonly LiteEffectTweenSequenceDefinition sequence;
+        private readonly LiteEffectTweenPlayback playback;
 
-        internal LiteEffectSequence(VisualElement element, LiteEffectTweenSequenceDefinition sequence)
+        internal LiteEffectSequence(LiteEffectTweenPlayback playback)
         {
-            this.element = element;
-            this.sequence = sequence;
+            this.playback = playback;
         }
 
         public LiteEffectSequence OnComplete(Action callback)
         {
-            sequence.OnComplete += callback;
+            playback.Sequence.OnComplete += callback;
+            playback.NotifySequenceChanged();
             return this;
         }
 
         public LiteEffectSequence Append(LiteEffectTween tween)
         {
-            sequence.Append(CloneTweenDefinition(tween));
+            playback.Sequence.Append(CloneTweenDefinition(tween));
+            playback.NotifySequenceChanged();
             return this;
         }
 
         public LiteEffectSequence Join(LiteEffectTween tween)
         {
-            sequence.Join(CloneTweenDefinition(tween));
-            return this;
-        }
-
-        public LiteEffectSequence Play()
-        {
-            LiteEffectControllerRegistry.GetOrCreate(element).PlayTweenSequence(sequence.Clone());
+            playback.Sequence.Join(CloneTweenDefinition(tween));
+            playback.NotifySequenceChanged();
             return this;
         }
 
         public void Kill()
         {
-            LiteEffectControllerRegistry.GetOrCreate(element).KillActiveTween(false);
+            playback.Kill();
         }
 
         private LiteEffectTweenDefinition CloneTweenDefinition(LiteEffectTween tween)
@@ -137,7 +129,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 throw new ArgumentNullException(nameof(tween));
             }
 
-            if (tween.Element != element)
+            if (tween.Element != playback.Element)
             {
                 throw new InvalidOperationException("LiteEffectSequence can only append tweens that target the same VisualElement.");
             }
@@ -227,6 +219,81 @@ namespace Acfeel.UIToolkitLiteEffects
                 Delay = Delay,
                 Ease = Ease
             };
+        }
+    }
+
+    internal sealed class LiteEffectTweenPlayback
+    {
+        private readonly VisualElement element;
+        private bool autoPlayScheduled;
+        private bool started;
+        private bool killed;
+        private IVisualElementScheduledItem autoPlayItem;
+
+        public LiteEffectTweenPlayback(VisualElement element, LiteEffectTweenSequenceDefinition sequence)
+        {
+            this.element = element;
+            Sequence = sequence;
+        }
+
+        public VisualElement Element => element;
+
+        public LiteEffectTweenSequenceDefinition Sequence { get; }
+
+        public void ScheduleAutoPlay()
+        {
+            if (autoPlayScheduled || started || killed)
+            {
+                return;
+            }
+
+            autoPlayScheduled = true;
+            autoPlayItem = element.schedule.Execute(AutoPlay).StartingIn(0);
+        }
+
+        public void NotifySequenceChanged()
+        {
+            if (killed)
+            {
+                return;
+            }
+
+            if (started)
+            {
+                LiteEffectControllerRegistry.GetOrCreate(element).PlayTweenSequence(Sequence.Clone());
+            }
+            else
+            {
+                ScheduleAutoPlay();
+            }
+        }
+
+        public void Kill()
+        {
+            killed = true;
+            autoPlayScheduled = false;
+
+            if (autoPlayItem != null)
+            {
+                autoPlayItem.Pause();
+                autoPlayItem = null;
+            }
+
+            LiteEffectControllerRegistry.GetOrCreate(element).KillActiveTween(false);
+        }
+
+        private void AutoPlay()
+        {
+            autoPlayScheduled = false;
+            autoPlayItem = null;
+
+            if (killed || element.panel == null || !Sequence.HasTweens)
+            {
+                return;
+            }
+
+            started = true;
+            LiteEffectControllerRegistry.GetOrCreate(element).PlayTweenSequence(Sequence.Clone());
         }
     }
 
