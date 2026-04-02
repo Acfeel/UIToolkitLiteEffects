@@ -1,0 +1,10 @@
+{
+  "name": "com.acfeel.uitoolkitliteeffects",
+  "displayName": "UIToolkitLiteEffects",
+  "version": "1.0.0",
+  "unity": "6000.1",
+  "description": "Lightweight UI Toolkit color adjustment and gradient effects driven by code or USS custom properties.",
+  "author": {
+    "name": "Napiiey"
+  }
+}
