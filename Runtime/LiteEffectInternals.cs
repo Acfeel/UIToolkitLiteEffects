@@ -486,6 +486,8 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             activeOutlineRenderer = sourceTexture != null ? TransparentImageOutlineRenderer.Instance : ElementOutlineRenderer.Instance;
+            var dissolveAmount = Mathf.Clamp01(dissolve.Amount);
+            var dissolveFade = dissolve.Enabled ? Mathf.SmoothStep(1f, 0f, dissolveAmount) : 1f;
             var padding = activeOutlineRenderer.GetPadding(outline);
             var targetSize = new Vector2Int(
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.width) + padding * 2, 1, 2048),
@@ -512,7 +514,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 outline.Color.r,
                 outline.Color.g,
                 outline.Color.b,
-                outline.Color.a * outline.Opacity);
+                outline.Color.a * outline.Opacity * (activeOutlineRenderer.RequiresTexture ? 1f : dissolveFade));
             outlineOverlayThickness = Mathf.Max(1f, outline.Thickness);
             IsVisible = display != DisplayStyle.None;
 
