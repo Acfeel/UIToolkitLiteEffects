@@ -31,10 +31,14 @@ namespace Acfeel.UIToolkitLiteEffects
         private LiteEffectSettings explicitSettings = new();
         private LiteEffectSettings ussSettings = new();
         private StyleColor originalInlineTint;
+        private StyleColor originalInlineBackgroundColor;
+        private Color preservedResolvedBackgroundColor;
         private bool hasExplicitSettings;
         private bool dirty = true;
         private bool tintCaptured;
         private bool tintSuppressed;
+        private bool backgroundColorCaptured;
+        private bool backgroundColorSuppressed;
         private bool disposed;
 
         public LiteEffectController(VisualElement element)
@@ -177,6 +181,7 @@ namespace Acfeel.UIToolkitLiteEffects
             element.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             element.UnregisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             RestoreBackgroundImageTint();
+            RestoreBackgroundColor();
             overflowController.Dispose();
             glowOverlayController.Dispose();
             outlineOverlayController.Dispose();
@@ -222,6 +227,7 @@ namespace Acfeel.UIToolkitLiteEffects
             if (!resolvedSettings.HasAnyEffect)
             {
                 RestoreBackgroundImageTint();
+                RestoreBackgroundColor();
                 return;
             }
 
@@ -289,6 +295,7 @@ namespace Acfeel.UIToolkitLiteEffects
             if (!resolvedSettings.HasAnyEffect)
             {
                 RestoreBackgroundImageTint();
+                RestoreBackgroundColor();
                 glowOverlayController.Hide();
                 outlineOverlayController.Hide();
                 overflowController.SetExpanded(false);
@@ -297,14 +304,18 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             var sourceTexture = ExtractTexture(element.resolvedStyle.backgroundImage);
-            var backgroundColor = sourceTexture != null ? Color.white : element.resolvedStyle.backgroundColor;
+            var backgroundColor = sourceTexture != null
+                ? Color.white
+                : backgroundColorSuppressed ? preservedResolvedBackgroundColor : element.resolvedStyle.backgroundColor;
             if (sourceTexture != null)
             {
                 SuppressBackgroundImageTint();
+                RestoreBackgroundColor();
             }
             else
             {
                 RestoreBackgroundImageTint();
+                SuppressBackgroundColor();
             }
 
             if (!renderTextureController.Update(element.contentRect, sourceTexture, backgroundColor, resolvedSettings))
@@ -363,6 +374,35 @@ namespace Acfeel.UIToolkitLiteEffects
 
             tintSuppressed = false;
             element.style.unityBackgroundImageTintColor = originalInlineTint;
+        }
+
+        private void SuppressBackgroundColor()
+        {
+            if (!backgroundColorCaptured)
+            {
+                originalInlineBackgroundColor = element.style.backgroundColor;
+                backgroundColorCaptured = true;
+            }
+
+            if (backgroundColorSuppressed)
+            {
+                return;
+            }
+
+            preservedResolvedBackgroundColor = element.resolvedStyle.backgroundColor;
+            backgroundColorSuppressed = true;
+            element.style.backgroundColor = new StyleColor(Color.clear);
+        }
+
+        private void RestoreBackgroundColor()
+        {
+            if (!backgroundColorSuppressed)
+            {
+                return;
+            }
+
+            backgroundColorSuppressed = false;
+            element.style.backgroundColor = originalInlineBackgroundColor;
         }
 
         private static Texture ExtractTexture(Background background)
