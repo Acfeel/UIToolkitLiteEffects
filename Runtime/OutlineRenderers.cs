@@ -193,6 +193,449 @@ namespace Acfeel.UIToolkitLiteEffects
         }
     }
 
+    internal sealed class LiteEffectTweenController : IDisposable
+    {
+        private readonly VisualElement element;
+        private readonly Action refreshAction;
+        private IVisualElementScheduledItem tweenScheduledItem;
+        private LiteEffectTweenRuntimeSequence activeTweenSequence;
+        private double tweenStartTime;
+
+        public LiteEffectTweenController(VisualElement element, Action refreshAction)
+        {
+            this.element = element;
+            this.refreshAction = refreshAction;
+            TweenSettings = new LiteEffectSettings();
+        }
+
+        public bool HasTweenSettings { get; private set; }
+
+        public LiteEffectSettings TweenSettings { get; private set; }
+
+        public void PlaySequence(LiteEffectTweenSequenceDefinition sequence, LiteEffectSettings startState)
+        {
+            if (sequence == null || !sequence.HasTweens)
+            {
+                return;
+            }
+
+            var compiled = CompileTweenSequence(sequence, startState);
+            if (compiled == null)
+            {
+                return;
+            }
+
+            Kill(false, null);
+            activeTweenSequence = compiled;
+            tweenStartTime = Time.realtimeSinceStartupAsDouble;
+            EnsureScheduler();
+            UpdateTween();
+        }
+
+        public void Kill(bool keepCurrentValue, Action<LiteEffectSettings> promoteExplicit)
+        {
+            if (HasTweenSettings && keepCurrentValue)
+            {
+                promoteExplicit?.Invoke(LiteEffectTweenSettingsUtility.Clone(TweenSettings));
+            }
+
+            HasTweenSettings = false;
+            TweenSettings = new LiteEffectSettings();
+            activeTweenSequence = null;
+
+            if (tweenScheduledItem != null)
+            {
+                tweenScheduledItem.Pause();
+            }
+        }
+
+        public void Dispose()
+        {
+            Kill(false, null);
+        }
+
+        private LiteEffectTweenRuntimeSequence CompileTweenSequence(LiteEffectTweenSequenceDefinition sequence, LiteEffectSettings startState)
+        {
+            var currentState = LiteEffectTweenSettingsUtility.Clone(startState);
+            var runtimeGroups = new System.Collections.Generic.List<LiteEffectTweenRuntimeGroup>();
+
+            foreach (var group in sequence.Groups)
+            {
+                var runtimeGroup = new LiteEffectTweenRuntimeGroup
+                {
+                    BaseState = LiteEffectTweenSettingsUtility.Clone(currentState),
+                    EndState = LiteEffectTweenSettingsUtility.Clone(currentState)
+                };
+
+                var longestDuration = 0f;
+                foreach (var item in group.Items)
+                {
+                    if (item?.TargetSettings == null || !LiteEffectTweenSettingsUtility.HasAnyAssignedField(item.TargetSettings))
+                    {
+                        continue;
+                    }
+
+                    var startPartial = LiteEffectTweenSettingsUtility.ExtractMasked(currentState, item.TargetSettings);
+                    var targetState = LiteEffectTweenSettingsUtility.Merge(currentState, item.TargetSettings);
+                    var endPartial = LiteEffectTweenSettingsUtility.ExtractMasked(targetState, item.TargetSettings);
+
+                    runtimeGroup.Items.Add(new LiteEffectTweenRuntimeItem
+                    {
+                        FromValues = startPartial,
+                        ToValues = endPartial,
+                        Delay = Mathf.Max(0f, item.Delay),
+                        Duration = Mathf.Max(0f, item.Duration),
+                        Ease = item.Ease
+                    });
+
+                    runtimeGroup.EndState = LiteEffectTweenSettingsUtility.Merge(runtimeGroup.EndState, item.TargetSettings);
+                    longestDuration = Mathf.Max(longestDuration, Mathf.Max(0f, item.Delay) + Mathf.Max(0f, item.Duration));
+                }
+
+                if (runtimeGroup.Items.Count == 0)
+                {
+                    continue;
+                }
+
+                runtimeGroup.TotalDuration = longestDuration;
+                runtimeGroups.Add(runtimeGroup);
+                currentState = LiteEffectTweenSettingsUtility.Clone(runtimeGroup.EndState);
+            }
+
+            return runtimeGroups.Count == 0 ? null : new LiteEffectTweenRuntimeSequence(runtimeGroups, sequence.OnComplete);
+        }
+
+        private void EnsureScheduler()
+        {
+            tweenScheduledItem ??= element.schedule.Execute(UpdateTween).Every(16);
+            tweenScheduledItem.Resume();
+        }
+
+        private void UpdateTween()
+        {
+            if (activeTweenSequence == null)
+            {
+                Kill(false, null);
+                return;
+            }
+
+            if (element.panel == null)
+            {
+                return;
+            }
+
+            if (!activeTweenSequence.TryEvaluate((float)(Time.realtimeSinceStartupAsDouble - tweenStartTime), out var frame, out var completed)
+                || frame == null)
+            {
+                Kill(false, null);
+                return;
+            }
+
+            HasTweenSettings = true;
+            TweenSettings = LiteEffectTweenSettingsUtility.Clone(frame);
+            refreshAction?.Invoke();
+
+            if (!completed)
+            {
+                return;
+            }
+
+            var callback = activeTweenSequence.OnComplete;
+            Kill(false, null);
+            callback?.Invoke();
+        }
+    }
+
+    internal sealed class LiteEffectOutlineOverlayController : IDisposable
+    {
+        private readonly VisualElement element;
+        private readonly Shader outlineShader;
+        private VisualElement outlineOverlayElement;
+        private VisualElement outlineOverlayHost;
+        private RenderTexture outlineTexture;
+        private Material outlineMaterial;
+        private StyleEnum<Overflow> originalInlineOverflow;
+        private Vector2Int outlineTextureSize;
+        private Color outlineOverlayColor = Color.clear;
+        private float outlineOverlayThickness;
+        private bool overflowCaptured;
+        private bool overflowExpanded;
+        private IOutlineRenderer activeOutlineRenderer;
+
+        public LiteEffectOutlineOverlayController(VisualElement element)
+        {
+            this.element = element;
+            outlineShader = ResolveShader("AcfeelUIToolkitLiteOutline", "Hidden/Acfeel/UIToolkitLiteOutline");
+        }
+
+        public void Update(Texture sourceTexture, Rect contentRect, ResolvedOutlineSettings outline, float opacity, Visibility visibility, DisplayStyle display)
+        {
+            if (!outline.Enabled || outline.Opacity <= 0.0001f || outline.Thickness <= 0.0001f || contentRect.width <= 0f || contentRect.height <= 0f)
+            {
+                Hide();
+                return;
+            }
+
+            if (!EnsureOverlayHost())
+            {
+                Hide();
+                return;
+            }
+
+            activeOutlineRenderer = sourceTexture != null ? TransparentImageOutlineRenderer.Instance : ElementOutlineRenderer.Instance;
+            var padding = activeOutlineRenderer.GetPadding(outline);
+            var targetSize = new Vector2Int(
+                Mathf.Clamp(Mathf.CeilToInt(contentRect.width) + padding * 2, 1, 2048),
+                Mathf.Clamp(Mathf.CeilToInt(contentRect.height) + padding * 2, 1, 2048));
+
+            var hostWorldRect = outlineOverlayHost.worldBound;
+            var contentWorldRect = new Rect(
+                element.worldBound.xMin + contentRect.xMin,
+                element.worldBound.yMin + contentRect.yMin,
+                contentRect.width,
+                contentRect.height);
+
+            outlineOverlayElement.style.left = contentWorldRect.xMin - hostWorldRect.xMin - padding;
+            outlineOverlayElement.style.top = contentWorldRect.yMin - hostWorldRect.yMin - padding;
+            outlineOverlayElement.style.width = targetSize.x;
+            outlineOverlayElement.style.height = targetSize.y;
+            outlineOverlayElement.style.opacity = opacity;
+            outlineOverlayElement.style.visibility = visibility;
+            outlineOverlayElement.style.display = display == DisplayStyle.None ? DisplayStyle.None : DisplayStyle.Flex;
+            outlineOverlayElement.style.backgroundImage = StyleKeyword.Null;
+            outlineOverlayElement.style.backgroundColor = StyleKeyword.Null;
+            UpdateOverflowState(true);
+
+            outlineOverlayColor = new Color(outline.Color.r, outline.Color.g, outline.Color.b, outline.Color.a * outline.Opacity);
+            outlineOverlayThickness = Mathf.Max(1f, outline.Thickness);
+
+            if (activeOutlineRenderer.RequiresTexture)
+            {
+                if (sourceTexture == null)
+                {
+                    Hide();
+                    return;
+                }
+
+                EnsureOutlineMaterial();
+                EnsureOutlineTexture(targetSize);
+                activeOutlineRenderer.PrepareTexture(outlineMaterial, outlineTexture, sourceTexture, contentRect.size, targetSize, padding, outline);
+            }
+            else
+            {
+                ReleaseOutlineTexture();
+            }
+
+            outlineOverlayElement.MarkDirtyRepaint();
+        }
+
+        public void Hide()
+        {
+            if (outlineOverlayElement != null)
+            {
+                outlineOverlayElement.style.display = DisplayStyle.None;
+                outlineOverlayElement.style.backgroundImage = StyleKeyword.Null;
+                outlineOverlayElement.style.backgroundColor = StyleKeyword.Null;
+            }
+
+            activeOutlineRenderer = null;
+            outlineOverlayColor = Color.clear;
+            outlineOverlayThickness = 0f;
+            ReleaseOutlineTexture();
+            RestoreOverflow();
+        }
+
+        public void Detach()
+        {
+            Hide();
+            if (outlineOverlayElement != null)
+            {
+                outlineOverlayElement.RemoveFromHierarchy();
+            }
+
+            outlineOverlayHost = null;
+        }
+
+        public void Dispose()
+        {
+            Hide();
+
+            if (outlineMaterial != null)
+            {
+                UnityEngine.Object.DestroyImmediate(outlineMaterial);
+                outlineMaterial = null;
+            }
+
+            if (outlineOverlayElement != null)
+            {
+                outlineOverlayElement.generateVisualContent -= OnGenerateVisualContent;
+                outlineOverlayElement.RemoveFromHierarchy();
+                outlineOverlayElement = null;
+            }
+
+            outlineOverlayHost = null;
+        }
+
+        private void OnGenerateVisualContent(MeshGenerationContext context)
+        {
+            if (activeOutlineRenderer == null || outlineOverlayElement == null)
+            {
+                return;
+            }
+
+            activeOutlineRenderer.Generate(context, outlineOverlayElement.contentRect, outlineTexture, outlineOverlayColor, outlineOverlayThickness);
+        }
+
+        private void EnsureOverlayElement()
+        {
+            if (outlineOverlayElement != null)
+            {
+                return;
+            }
+
+            outlineOverlayElement = new VisualElement
+            {
+                pickingMode = PickingMode.Ignore
+            };
+            outlineOverlayElement.style.position = Position.Absolute;
+            outlineOverlayElement.style.display = DisplayStyle.None;
+            outlineOverlayElement.generateVisualContent += OnGenerateVisualContent;
+        }
+
+        private bool EnsureOverlayHost()
+        {
+            var parent = element.parent;
+            if (parent == null)
+            {
+                return false;
+            }
+
+            EnsureOverlayElement();
+            if (outlineOverlayElement.parent != parent)
+            {
+                outlineOverlayElement.RemoveFromHierarchy();
+                parent.Insert(parent.IndexOf(element), outlineOverlayElement);
+            }
+            else
+            {
+                var elementIndex = parent.IndexOf(element);
+                var overlayIndex = parent.IndexOf(outlineOverlayElement);
+                if (overlayIndex >= elementIndex)
+                {
+                    outlineOverlayElement.RemoveFromHierarchy();
+                    parent.Insert(elementIndex, outlineOverlayElement);
+                }
+            }
+
+            outlineOverlayHost = parent;
+            return true;
+        }
+
+        private void EnsureOutlineMaterial()
+        {
+            if (outlineMaterial != null)
+            {
+                return;
+            }
+
+            outlineMaterial = new Material(outlineShader)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+        }
+
+        private void EnsureOutlineTexture(Vector2Int targetSize)
+        {
+            if (outlineTexture != null && outlineTextureSize == targetSize)
+            {
+                return;
+            }
+
+            ReleaseOutlineTexture();
+
+            outlineTexture = new RenderTexture(targetSize.x, targetSize.y, 0, RenderTextureFormat.ARGB32)
+            {
+                name = "UIToolkitLiteEffects_OutlineRT",
+                hideFlags = HideFlags.HideAndDontSave,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear
+            };
+            outlineTexture.Create();
+            outlineTextureSize = targetSize;
+        }
+
+        private void ReleaseOutlineTexture()
+        {
+            outlineTextureSize = default;
+
+            if (outlineTexture == null)
+            {
+                return;
+            }
+
+            outlineTexture.Release();
+            UnityEngine.Object.DestroyImmediate(outlineTexture);
+            outlineTexture = null;
+        }
+
+        private void UpdateOverflowState(bool expanded)
+        {
+            if (outlineOverlayHost == null)
+            {
+                return;
+            }
+
+            if (!overflowCaptured)
+            {
+                originalInlineOverflow = outlineOverlayHost.style.overflow;
+                overflowCaptured = true;
+            }
+
+            if (expanded)
+            {
+                if (!overflowExpanded)
+                {
+                    overflowExpanded = true;
+                    outlineOverlayHost.style.overflow = Overflow.Visible;
+                }
+
+                return;
+            }
+
+            RestoreOverflow();
+        }
+
+        private void RestoreOverflow()
+        {
+            if (!overflowExpanded)
+            {
+                return;
+            }
+
+            overflowExpanded = false;
+            if (outlineOverlayHost != null)
+            {
+                outlineOverlayHost.style.overflow = originalInlineOverflow;
+            }
+        }
+
+        private static Shader ResolveShader(string resourceName, string shaderName)
+        {
+            var shader = Resources.Load<Shader>(resourceName);
+            if (shader == null)
+            {
+                shader = Shader.Find(shaderName);
+            }
+
+            if (shader == null)
+            {
+                throw new InvalidOperationException($"{resourceName} shader was not found.");
+            }
+
+            return shader;
+        }
+    }
+
     internal interface IOutlineRenderer
     {
         bool RequiresTexture { get; }
