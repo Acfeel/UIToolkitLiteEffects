@@ -296,11 +296,18 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
 
                 if (_DissolveEnabled > 0.5 && _DissolveAmount > 0.0001)
                 {
-                    float noise = GetDissolveNoise(uv);
-                    float visible = step(_DissolveAmount, noise);
-                    float edge = 1.0 - smoothstep(_DissolveAmount, saturate(_DissolveAmount + max(_DissolveEdgeWidth, 0.0001)), noise);
-                    processed.rgb = lerp(processed.rgb, _DissolveEdgeColor.rgb, edge * _DissolveEdgeColor.a);
-                    processed.a *= visible + edge * (1.0 - visible);
+                    float microNoise = Hash21(floor(uv * 640.0) + 37.0);
+                    float noise = saturate(GetDissolveNoise(uv) * 0.75 + microNoise * 0.25);
+                    float edgeWidth = max(_DissolveEdgeWidth, 0.0001);
+                    float dissolveMask = smoothstep(_DissolveAmount - edgeWidth, _DissolveAmount + edgeWidth, noise);
+                    processed.rgb *= dissolveMask;
+                    processed.a *= dissolveMask;
+
+                    if (_DissolveEdgeColor.a > 0.0001)
+                    {
+                        float edge = 1.0 - dissolveMask;
+                        processed.rgb = lerp(processed.rgb, _DissolveEdgeColor.rgb, edge * _DissolveEdgeColor.a * 0.25);
+                    }
                 }
 
                 if (_GlitchEnabled > 0.5 && _GlitchIntensity > 0.0001)

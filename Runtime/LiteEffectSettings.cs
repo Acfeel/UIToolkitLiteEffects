@@ -399,7 +399,7 @@ namespace Acfeel.UIToolkitLiteEffects
         {
             var amount = Mathf.Clamp01(explicitSettings?.Amount ?? ussSettings?.Amount ?? 0f);
             var edgeWidth = Mathf.Clamp01(explicitSettings?.EdgeWidth ?? ussSettings?.EdgeWidth ?? 0.08f);
-            var edgeColor = explicitSettings?.EdgeColor ?? ussSettings?.EdgeColor ?? new Color(1f, 0.65f, 0.2f, 1f);
+            var edgeColor = explicitSettings?.EdgeColor ?? ussSettings?.EdgeColor ?? Color.clear;
             var enabled = explicitSettings?.Enabled
                 ?? ussSettings?.Enabled
                 ?? amount > 0.0001f;

@@ -67,7 +67,7 @@ icon.SetLiteEffect(new LiteEffectSettings
     {
         Amount = 0.15f,
         EdgeWidth = 0.08f,
-        EdgeColor = new Color(1f, 0.55f, 0.2f, 1f)
+        EdgeColor = Color.clear
     },
     Glitch = new GlitchSettings
     {
@@ -192,6 +192,7 @@ icon.SetLiteEffect(new LiteEffectSettings());
 - `Glow Spread`: `0..4`。広げ過ぎず、輪郭共有の軽量発光です
 - `Blur Radius`: `0..3`。少数サンプルの疑似ブラーなので大きい値には向きません
 - `Dissolve Amount`: `0..1`。`0` で表示、`1` に近いほど消えます
+- `Dissolve EdgeColor`: `Color.clear` なら縁色を出さず、そのまま透明に抜けます
 - `Glitch Intensity`: `0..1`。低い値で短い揺れを足す用途を想定しています
 
 サンプルも、この値の意味がそのまま見えるようにしています。`0.5` を中心に動かすと、効果の強弱を直感的に追えます。
