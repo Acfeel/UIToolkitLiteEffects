@@ -64,7 +64,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteGlow"
                     (uv.y - _ContentUvRect.y) / max(_ContentUvRect.w - _ContentUvRect.y, 0.0001));
             }
 
-            float SampleAlpha(float2 uv)
+            float SampleRawAlpha(float2 uv)
             {
                 if (!IsInsideContent(uv))
                 {
@@ -77,20 +77,25 @@ Shader "Hidden/Acfeel/UIToolkitLiteGlow"
                 return tex2D(_MainTex, sampleUv).a * _SourceAlphaMultiplier;
             }
 
+            float SampleSilhouetteAlpha(float2 uv)
+            {
+                return step(0.7, SampleRawAlpha(uv));
+            }
+
             float GetOutlineMask(float2 uv, float thickness)
             {
                 float2 texel = _MainTexTexelSize.xy * max(thickness, 0.0001);
-                float sourceAlpha = SampleAlpha(uv);
+                float sourceAlpha = SampleSilhouetteAlpha(uv);
                 float neighborAlpha = 0.0;
-                neighborAlpha = max(neighborAlpha, SampleAlpha(uv + float2(texel.x, 0.0)));
-                neighborAlpha = max(neighborAlpha, SampleAlpha(uv + float2(-texel.x, 0.0)));
-                neighborAlpha = max(neighborAlpha, SampleAlpha(uv + float2(0.0, texel.y)));
-                neighborAlpha = max(neighborAlpha, SampleAlpha(uv + float2(0.0, -texel.y)));
+                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(texel.x, 0.0)));
+                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(-texel.x, 0.0)));
+                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(0.0, texel.y)));
+                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(0.0, -texel.y)));
                 float2 diagonal = texel * 0.70710678;
-                neighborAlpha = max(neighborAlpha, SampleAlpha(uv + float2(diagonal.x, diagonal.y)));
-                neighborAlpha = max(neighborAlpha, SampleAlpha(uv + float2(-diagonal.x, diagonal.y)));
-                neighborAlpha = max(neighborAlpha, SampleAlpha(uv + float2(diagonal.x, -diagonal.y)));
-                neighborAlpha = max(neighborAlpha, SampleAlpha(uv + float2(-diagonal.x, -diagonal.y)));
+                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(diagonal.x, diagonal.y)));
+                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(-diagonal.x, diagonal.y)));
+                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(diagonal.x, -diagonal.y)));
+                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(-diagonal.x, -diagonal.y)));
                 return saturate(neighborAlpha - sourceAlpha);
             }
 
@@ -102,7 +107,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteGlow"
                 float outer = GetOutlineMask(i.uv, spread * 2.7);
                 float mask = saturate(inner * 0.7 + middle * 0.5 + outer * 0.3);
                 mask *= _GlowStrength;
-                mask *= 1.0 - smoothstep(0.55, 1.0, SampleAlpha(i.uv));
+                mask *= 1.0 - SampleSilhouetteAlpha(i.uv);
                 clip(mask - 0.001);
                 return float4(_GlowColor.rgb, saturate(mask * _GlowColor.a));
             }

@@ -150,6 +150,11 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 return SampleSource(uv + offset).a;
             }
 
+            float GetNeighborSilhouetteAlpha(float2 uv, float2 offset)
+            {
+                return step(0.7, GetNeighborAlpha(uv, offset));
+            }
+
             float GetOutlineMask(float2 uv, float sourceAlpha, float thickness)
             {
                 float2 texel = _MainTexTexelSize.xy * max(thickness, 0.0001);
@@ -166,10 +171,27 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 return saturate(neighborAlpha - sourceAlpha);
             }
 
+            float GetGlowOutlineMask(float2 uv, float sourceSilhouetteAlpha, float thickness)
+            {
+                float2 texel = _MainTexTexelSize.xy * max(thickness, 0.0001);
+                float neighborAlpha = 0.0;
+                neighborAlpha = max(neighborAlpha, GetNeighborSilhouetteAlpha(uv, float2(texel.x, 0.0)));
+                neighborAlpha = max(neighborAlpha, GetNeighborSilhouetteAlpha(uv, float2(-texel.x, 0.0)));
+                neighborAlpha = max(neighborAlpha, GetNeighborSilhouetteAlpha(uv, float2(0.0, texel.y)));
+                neighborAlpha = max(neighborAlpha, GetNeighborSilhouetteAlpha(uv, float2(0.0, -texel.y)));
+                float2 diagonal = texel * 0.70710678;
+                neighborAlpha = max(neighborAlpha, GetNeighborSilhouetteAlpha(uv, float2(diagonal.x, diagonal.y)));
+                neighborAlpha = max(neighborAlpha, GetNeighborSilhouetteAlpha(uv, float2(-diagonal.x, diagonal.y)));
+                neighborAlpha = max(neighborAlpha, GetNeighborSilhouetteAlpha(uv, float2(diagonal.x, -diagonal.y)));
+                neighborAlpha = max(neighborAlpha, GetNeighborSilhouetteAlpha(uv, float2(-diagonal.x, -diagonal.y)));
+                return saturate(neighborAlpha - sourceSilhouetteAlpha);
+            }
+
             float GetGlowMask(float2 uv, float sourceAlpha, float spread)
             {
-                float innerMask = GetOutlineMask(uv, sourceAlpha, max(spread * 0.9, 0.0001));
-                float outerMask = GetOutlineMask(uv, sourceAlpha, max(spread * 1.8, 0.0001));
+                float sourceSilhouetteAlpha = step(0.7, sourceAlpha);
+                float innerMask = GetGlowOutlineMask(uv, sourceSilhouetteAlpha, max(spread * 0.9, 0.0001));
+                float outerMask = GetGlowOutlineMask(uv, sourceSilhouetteAlpha, max(spread * 1.8, 0.0001));
                 return saturate(innerMask * 0.7 + outerMask * 0.45);
             }
 
