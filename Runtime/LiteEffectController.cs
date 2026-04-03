@@ -260,7 +260,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
             if (resolvedSettings.RequiresRealtimeRefresh)
             {
-                element.MarkDirtyRepaint();
+                element.schedule.Execute(() => element.MarkDirtyRepaint()).StartingIn(0);
             }
         }
 
