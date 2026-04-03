@@ -11,7 +11,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteGlow"
         Cull Off
         ZWrite Off
         ZTest Always
-        Blend SrcAlpha OneMinusSrcAlpha
+        Blend Off
 
         Pass
         {
@@ -81,40 +81,57 @@ Shader "Hidden/Acfeel/UIToolkitLiteGlow"
                 return tex2D(_MainTex, sampleUv).a * _SourceAlphaMultiplier;
             }
 
-            float SampleSilhouetteAlpha(float2 uv)
+            float SampleContentDissolveMask(float2 uv)
             {
-                return step(0.7, SampleRawAlpha(uv));
+                if (!IsInsideContent(uv))
+                {
+                    return 0.0;
+                }
+
+                return LiteEffectGetDissolveMask(saturate(RemapContentUv(uv)), _DissolveEnabled, _DissolveAmount, _DissolveEdgeWidth);
+            }
+
+            float SampleGlowSourceAlpha(float2 uv)
+            {
+                float rawAlpha = SampleRawAlpha(uv);
+                float glowAlpha = smoothstep(0.35, 0.85, rawAlpha);
+                return glowAlpha * SampleContentDissolveMask(uv);
             }
 
             float GetOutlineMask(float2 uv, float thickness)
             {
                 float2 texel = _MainTexTexelSize.xy * max(thickness, 0.0001);
-                float sourceAlpha = SampleSilhouetteAlpha(uv);
+                float sourceAlpha = SampleGlowSourceAlpha(uv);
                 float neighborAlpha = 0.0;
-                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(texel.x, 0.0)));
-                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(-texel.x, 0.0)));
-                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(0.0, texel.y)));
-                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(0.0, -texel.y)));
+                neighborAlpha = max(neighborAlpha, SampleGlowSourceAlpha(uv + float2(texel.x, 0.0)));
+                neighborAlpha = max(neighborAlpha, SampleGlowSourceAlpha(uv + float2(-texel.x, 0.0)));
+                neighborAlpha = max(neighborAlpha, SampleGlowSourceAlpha(uv + float2(0.0, texel.y)));
+                neighborAlpha = max(neighborAlpha, SampleGlowSourceAlpha(uv + float2(0.0, -texel.y)));
                 float2 diagonal = texel * 0.70710678;
-                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(diagonal.x, diagonal.y)));
-                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(-diagonal.x, diagonal.y)));
-                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(diagonal.x, -diagonal.y)));
-                neighborAlpha = max(neighborAlpha, SampleSilhouetteAlpha(uv + float2(-diagonal.x, -diagonal.y)));
+                neighborAlpha = max(neighborAlpha, SampleGlowSourceAlpha(uv + float2(diagonal.x, diagonal.y)));
+                neighborAlpha = max(neighborAlpha, SampleGlowSourceAlpha(uv + float2(-diagonal.x, diagonal.y)));
+                neighborAlpha = max(neighborAlpha, SampleGlowSourceAlpha(uv + float2(diagonal.x, -diagonal.y)));
+                neighborAlpha = max(neighborAlpha, SampleGlowSourceAlpha(uv + float2(-diagonal.x, -diagonal.y)));
                 return saturate(neighborAlpha - sourceAlpha);
             }
 
             float4 frag(v2f i) : SV_Target
             {
                 float spread = max(_GlowSpread, 0.0001);
+                float strength = saturate(_GlowStrength);
                 float inner = GetOutlineMask(i.uv, spread * 0.85);
                 float middle = GetOutlineMask(i.uv, spread * 1.7);
                 float outer = GetOutlineMask(i.uv, spread * 2.7);
-                float mask = saturate(inner * 0.7 + middle * 0.5 + outer * 0.3);
-                mask *= _GlowStrength;
-                mask *= 1.0 - SampleSilhouetteAlpha(i.uv);
-                mask *= LiteEffectGetDissolveMask(i.uv, _DissolveEnabled, _DissolveAmount, _DissolveEdgeWidth);
-                clip(mask - 0.001);
-                return float4(_GlowColor.rgb, saturate(mask * _GlowColor.a));
+                float middlePresence = smoothstep(0.15, 0.65, strength);
+                float outerPresence = smoothstep(0.45, 1.0, strength);
+                float mask = saturate(
+                    inner * 0.7
+                    + middle * 0.45 * middlePresence
+                    + outer * 0.25 * outerPresence);
+                mask *= strength;
+                mask *= 1.0 - SampleGlowSourceAlpha(i.uv);
+                float alpha = saturate(mask * _GlowColor.a);
+                return float4(_GlowColor.rgb * alpha, alpha);
             }
             ENDHLSL
         }
