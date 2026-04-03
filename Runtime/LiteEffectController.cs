@@ -319,6 +319,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 sourceTexture,
                 element.contentRect,
                 resolvedSettings.Outline,
+                resolvedSettings.Dissolve,
                 element.resolvedStyle.opacity,
                 element.resolvedStyle.visibility,
                 element.resolvedStyle.display);
@@ -327,6 +328,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 sourceTexture,
                 element.contentRect,
                 backgroundColor,
+                resolvedSettings.Dissolve,
                 resolvedSettings.Glow,
                 element.resolvedStyle.opacity,
                 element.resolvedStyle.visibility,

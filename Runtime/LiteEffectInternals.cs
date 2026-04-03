@@ -442,6 +442,10 @@ namespace Acfeel.UIToolkitLiteEffects
 
     internal sealed class LiteEffectOutlineOverlayController : IDisposable
     {
+        private const float DissolveCompleteThreshold = 0.9995f;
+        private static readonly int DissolveEnabledId = Shader.PropertyToID("_DissolveEnabled");
+        private static readonly int DissolveAmountId = Shader.PropertyToID("_DissolveAmount");
+        private static readonly int DissolveEdgeWidthId = Shader.PropertyToID("_DissolveEdgeWidth");
         private readonly VisualElement element;
         private readonly Shader outlineShader;
         private VisualElement outlineOverlayElement;
@@ -461,9 +465,15 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public bool IsVisible { get; private set; }
 
-        public void Update(Texture sourceTexture, Rect contentRect, ResolvedOutlineSettings outline, float opacity, Visibility visibility, DisplayStyle display)
+        public void Update(Texture sourceTexture, Rect contentRect, ResolvedOutlineSettings outline, ResolvedDissolveSettings dissolve, float opacity, Visibility visibility, DisplayStyle display)
         {
             if (!outline.Enabled || outline.Opacity <= 0.0001f || outline.Thickness <= 0.0001f || contentRect.width <= 0f || contentRect.height <= 0f)
+            {
+                Hide();
+                return;
+            }
+
+            if (dissolve.Enabled && dissolve.Amount >= DissolveCompleteThreshold)
             {
                 Hide();
                 return;
@@ -498,7 +508,11 @@ namespace Acfeel.UIToolkitLiteEffects
             outlineOverlayElement.style.backgroundImage = StyleKeyword.Null;
             outlineOverlayElement.style.backgroundColor = StyleKeyword.Null;
 
-            outlineOverlayColor = new Color(outline.Color.r, outline.Color.g, outline.Color.b, outline.Color.a * outline.Opacity);
+            outlineOverlayColor = new Color(
+                outline.Color.r,
+                outline.Color.g,
+                outline.Color.b,
+                outline.Color.a * outline.Opacity);
             outlineOverlayThickness = Mathf.Max(1f, outline.Thickness);
             IsVisible = display != DisplayStyle.None;
 
@@ -512,6 +526,9 @@ namespace Acfeel.UIToolkitLiteEffects
 
                 EnsureOutlineMaterial();
                 EnsureOutlineTexture(targetSize);
+                outlineMaterial.SetFloat(DissolveEnabledId, dissolve.Enabled ? 1f : 0f);
+                outlineMaterial.SetFloat(DissolveAmountId, dissolve.Amount);
+                outlineMaterial.SetFloat(DissolveEdgeWidthId, dissolve.EdgeWidth);
                 activeOutlineRenderer.PrepareTexture(outlineMaterial, outlineTexture, sourceTexture, contentRect.size, targetSize, padding, outline);
             }
             else
@@ -690,11 +707,15 @@ namespace Acfeel.UIToolkitLiteEffects
 
     internal sealed class LiteEffectGlowOverlayController : IDisposable
     {
+        private const float DissolveCompleteThreshold = 0.9995f;
         private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
         private static readonly int GlowColorId = Shader.PropertyToID("_GlowColor");
         private static readonly int GlowStrengthId = Shader.PropertyToID("_GlowStrength");
         private static readonly int GlowSpreadId = Shader.PropertyToID("_GlowSpread");
         private static readonly int SourceAlphaMultiplierId = Shader.PropertyToID("_SourceAlphaMultiplier");
+        private static readonly int DissolveEnabledId = Shader.PropertyToID("_DissolveEnabled");
+        private static readonly int DissolveAmountId = Shader.PropertyToID("_DissolveAmount");
+        private static readonly int DissolveEdgeWidthId = Shader.PropertyToID("_DissolveEdgeWidth");
         private static readonly int TexelSizeId = Shader.PropertyToID("_MainTexTexelSize");
         private static readonly int ContentUvRectId = Shader.PropertyToID("_ContentUvRect");
 
@@ -718,12 +739,19 @@ namespace Acfeel.UIToolkitLiteEffects
             Texture sourceTexture,
             Rect contentRect,
             Color backgroundColor,
+            ResolvedDissolveSettings dissolve,
             ResolvedGlowSettings glow,
             float opacity,
             Visibility visibility,
             DisplayStyle display)
         {
             if (!glow.Enabled || glow.Strength <= 0.0001f || glow.Spread <= 0.0001f || contentRect.width <= 0f || contentRect.height <= 0f)
+            {
+                Hide();
+                return;
+            }
+
+            if (dissolve.Enabled && dissolve.Amount >= DissolveCompleteThreshold)
             {
                 Hide();
                 return;
@@ -779,6 +807,9 @@ namespace Acfeel.UIToolkitLiteEffects
             glowMaterial.SetFloat(GlowStrengthId, glow.Strength);
             glowMaterial.SetFloat(GlowSpreadId, glow.Spread);
             glowMaterial.SetFloat(SourceAlphaMultiplierId, sourceAlphaMultiplier);
+            glowMaterial.SetFloat(DissolveEnabledId, dissolve.Enabled ? 1f : 0f);
+            glowMaterial.SetFloat(DissolveAmountId, dissolve.Amount);
+            glowMaterial.SetFloat(DissolveEdgeWidthId, dissolve.EdgeWidth);
             glowMaterial.SetVector(TexelSizeId, new Vector4(1f / targetSize.x, 1f / targetSize.y, targetSize.x, targetSize.y));
             glowMaterial.SetVector(ContentUvRectId, contentUvRect);
             Graphics.Blit(glowSourceTexture, glowTexture, glowMaterial);

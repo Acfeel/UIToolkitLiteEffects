@@ -202,6 +202,21 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 return saturate(primary * 0.7 + secondary * 0.3);
             }
 
+            float GetDissolveMask(float2 uv, float amount, float edgeWidth)
+            {
+                float microNoise = Hash21(floor(uv * 640.0) + 37.0);
+                float noise = saturate(GetDissolveNoise(uv) * 0.75 + microNoise * 0.25);
+                amount = saturate(amount);
+                edgeWidth = max(edgeWidth, 0.0001);
+
+                if (amount >= 0.9999)
+                {
+                    return 0.0;
+                }
+
+                return smoothstep(amount - edgeWidth, amount + edgeWidth, noise);
+            }
+
             float3 SampleBlur(float2 uv, float radius)
             {
                 float2 texel = _MainTexTexelSize.xy * max(radius, 0.0001);
@@ -296,13 +311,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
 
                 if (_DissolveEnabled > 0.5 && _DissolveAmount > 0.0001)
                 {
-                    float microNoise = Hash21(floor(uv * 640.0) + 37.0);
-                    float noise = saturate(GetDissolveNoise(uv) * 0.75 + microNoise * 0.25);
-                    float dissolveAmount = saturate(_DissolveAmount);
-                    float edgeWidth = max(_DissolveEdgeWidth, 0.0001);
-                    float dissolveMask = dissolveAmount >= 0.9999
-                        ? 0.0
-                        : saturate((noise - dissolveAmount) / edgeWidth) * (1.0 - dissolveAmount);
+                    float dissolveMask = GetDissolveMask(uv, _DissolveAmount, _DissolveEdgeWidth);
                     processed.rgb *= dissolveMask;
                     processed.a *= dissolveMask;
 
