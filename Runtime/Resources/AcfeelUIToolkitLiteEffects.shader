@@ -198,13 +198,37 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
             float3 SampleBlur(float2 uv, float radius)
             {
                 float2 texel = _MainTexTexelSize.xy * max(radius, 0.0001);
-                float3 center = SampleSource(uv).rgb;
-                float3 cross =
-                    SampleSource(uv + float2(texel.x, 0.0)).rgb +
-                    SampleSource(uv + float2(-texel.x, 0.0)).rgb +
-                    SampleSource(uv + float2(0.0, texel.y)).rgb +
-                    SampleSource(uv + float2(0.0, -texel.y)).rgb;
-                return (center + cross * 0.5) / 3.0;
+                float4 center = SampleSource(uv);
+                float4 right = SampleSource(uv + float2(texel.x, 0.0));
+                float4 left = SampleSource(uv + float2(-texel.x, 0.0));
+                float4 up = SampleSource(uv + float2(0.0, texel.y));
+                float4 down = SampleSource(uv + float2(0.0, -texel.y));
+                float2 diagonal = texel * 0.70710678;
+                float4 topRight = SampleSource(uv + float2(diagonal.x, diagonal.y));
+                float4 topLeft = SampleSource(uv + float2(-diagonal.x, diagonal.y));
+                float4 bottomRight = SampleSource(uv + float2(diagonal.x, -diagonal.y));
+                float4 bottomLeft = SampleSource(uv + float2(-diagonal.x, -diagonal.y));
+
+                float centerWeight = 2.0;
+                float crossWeight = 1.0;
+                float cornerWeight = 0.75;
+
+                float alphaWeight =
+                    center.a * centerWeight +
+                    (right.a + left.a + up.a + down.a) * crossWeight +
+                    (topRight.a + topLeft.a + bottomRight.a + bottomLeft.a) * cornerWeight;
+
+                float3 weightedColor =
+                    center.rgb * center.a * centerWeight +
+                    (right.rgb * right.a + left.rgb * left.a + up.rgb * up.a + down.rgb * down.a) * crossWeight +
+                    (topRight.rgb * topRight.a + topLeft.rgb * topLeft.a + bottomRight.rgb * bottomRight.a + bottomLeft.rgb * bottomLeft.a) * cornerWeight;
+
+                if (alphaWeight <= 0.0001)
+                {
+                    return center.rgb;
+                }
+
+                return weightedColor / alphaWeight;
             }
 
             float4 frag(v2f i) : SV_Target
@@ -230,12 +254,6 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 float contrast = max(0.0, _Contrast * 2.0);
                 float saturation = max(0.0, _Saturation * 2.0);
 
-                if (_BlurEnabled > 0.5 && _BlurRadius > 0.0001 && _BlurStrength > 0.0001)
-                {
-                    float3 blurred = SampleBlur(uv, _BlurRadius);
-                    processed.rgb = lerp(processed.rgb, blurred * _BaseColor.rgb, _BlurStrength);
-                }
-
                 if (_GradientEnabled > 0.5)
                 {
                     float2 direction = normalize(_GradientDirection.xy);
@@ -254,6 +272,12 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 if (_BlendEnabled > 0.5)
                 {
                     processed = ApplyMode(source, processed, _BlendMode, _BlendStrength);
+                }
+
+                if (_BlurEnabled > 0.5 && _BlurRadius > 0.0001 && _BlurStrength > 0.0001)
+                {
+                    float3 blurred = SampleBlur(uv, _BlurRadius);
+                    processed.rgb = lerp(processed.rgb, blurred, _BlurStrength);
                 }
 
                 if (_GlowEnabled > 0.5 && _GlowStrength > 0.0001 && _GlowSpread > 0.0001)
