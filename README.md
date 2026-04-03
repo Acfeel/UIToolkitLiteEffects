@@ -1,6 +1,6 @@
 # UIToolkitLiteEffects
 
-Unity UI Toolkit 向けの軽量エフェクトパッケージです。`VisualElement` や `backgroundImage` を持つ要素に対して、色調補正、グラデーション、簡易ブレンドに加えて、疑似アウトライン、グロー風、疑似ブラー、ディゾルブ、ノイズ/グリッチをコード主導で適用できます。
+Unity UI Toolkit 向けの軽量ビジュアルエフェクトパッケージです。`VisualElement` や `backgroundImage` を持つ要素に対して、色調補正、グラデーション、簡易ブレンドに加えて、疑似アウトライン、グロー風、疑似ブラー、ディゾルブ、ノイズ/グリッチをコード主導で適用できます。
 
 ## 特徴
 
@@ -16,7 +16,7 @@ Unity UI Toolkit 向けの軽量エフェクトパッケージです。`VisualEl
 
 1. Unity の `Window > Package Manager` を開く
 2. `Install package from git URL...` を選ぶ
-3. このリポジトリ URL を指定する
+3. `https://github.com/acfeel/UIToolkitLiteEffects.git` を指定する
 
 ## 使い方
 
