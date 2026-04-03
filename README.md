@@ -16,7 +16,11 @@ Unity UI Toolkit 向けの軽量ビジュアルエフェクトパッケージで
 
 1. Unity の `Window > Package Manager` を開く
 2. `Install package from git URL...` を選ぶ
-3. `https://github.com/acfeel/UIToolkitLiteEffects.git` を指定する
+3. 次の URL を貼り付ける
+
+```text
+https://github.com/acfeel/UIToolkitLiteEffects.git
+```
 
 ## 使い方
 
