@@ -4,6 +4,29 @@ using UnityEngine.UIElements;
 
 namespace Acfeel.UIToolkitLiteEffects
 {
+    internal static class LiteEffectMeshUtility
+    {
+        public static Vertex CreateVertex(Vector2 position, Vector2 uv)
+        {
+            return new Vertex
+            {
+                position = new Vector3(position.x, position.y, Vertex.nearZ),
+                uv = uv,
+                tint = Color.white
+            };
+        }
+
+        public static Vertex CreateTintedVertex(Vector2 position, Vector2 uv, Color tint)
+        {
+            return new Vertex
+            {
+                position = new Vector3(position.x, position.y, Vertex.nearZ),
+                uv = uv,
+                tint = tint
+            };
+        }
+    }
+
     internal static class LiteEffectMaterialBinder
     {
         private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
