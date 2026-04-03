@@ -302,7 +302,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                     float edgeWidth = max(_DissolveEdgeWidth, 0.0001);
                     float dissolveMask = dissolveAmount >= 0.9999
                         ? 0.0
-                        : 1.0 - smoothstep(max(1.0 - dissolveAmount - edgeWidth, 0.0), min(1.0 - dissolveAmount + edgeWidth, 1.0), noise);
+                        : saturate((noise - dissolveAmount) / edgeWidth) * (1.0 - dissolveAmount);
                     processed.rgb *= dissolveMask;
                     processed.a *= dissolveMask;
 
