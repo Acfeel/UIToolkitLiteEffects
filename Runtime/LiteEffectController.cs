@@ -25,6 +25,8 @@ namespace Acfeel.UIToolkitLiteEffects
         private readonly VisualElement element;
         private readonly LiteEffectRenderTextureController renderTextureController;
         private readonly LiteEffectOutlineOverlayController outlineOverlayController;
+        private readonly LiteEffectGlowOverlayController glowOverlayController;
+        private readonly LiteEffectOverflowController overflowController;
         private readonly LiteEffectTweenController tweenController;
         private LiteEffectSettings explicitSettings = new();
         private LiteEffectSettings ussSettings = new();
@@ -40,6 +42,8 @@ namespace Acfeel.UIToolkitLiteEffects
             this.element = element;
             renderTextureController = new LiteEffectRenderTextureController();
             outlineOverlayController = new LiteEffectOutlineOverlayController(element);
+            glowOverlayController = new LiteEffectGlowOverlayController(element);
+            overflowController = new LiteEffectOverflowController(element);
             tweenController = new LiteEffectTweenController(element, Refresh);
             element.generateVisualContent += OnGenerateVisualContent;
             element.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -173,6 +177,8 @@ namespace Acfeel.UIToolkitLiteEffects
             element.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             element.UnregisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             RestoreBackgroundImageTint();
+            overflowController.Dispose();
+            glowOverlayController.Dispose();
             outlineOverlayController.Dispose();
             renderTextureController.Dispose();
         }
@@ -185,6 +191,8 @@ namespace Acfeel.UIToolkitLiteEffects
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             tweenController.Kill(true, PromoteExplicitSettings);
+            overflowController.SetExpanded(false);
+            glowOverlayController.Detach();
             outlineOverlayController.Detach();
             renderTextureController.Release();
         }
@@ -281,7 +289,9 @@ namespace Acfeel.UIToolkitLiteEffects
             if (!resolvedSettings.HasAnyEffect)
             {
                 RestoreBackgroundImageTint();
+                glowOverlayController.Hide();
                 outlineOverlayController.Hide();
+                overflowController.SetExpanded(false);
                 renderTextureController.Release();
                 return;
             }
@@ -299,7 +309,9 @@ namespace Acfeel.UIToolkitLiteEffects
 
             if (!renderTextureController.Update(element.contentRect, sourceTexture, backgroundColor, resolvedSettings))
             {
+                glowOverlayController.Hide();
                 outlineOverlayController.Hide();
+                overflowController.SetExpanded(false);
                 return;
             }
 
@@ -310,6 +322,17 @@ namespace Acfeel.UIToolkitLiteEffects
                 element.resolvedStyle.opacity,
                 element.resolvedStyle.visibility,
                 element.resolvedStyle.display);
+
+            glowOverlayController.Update(
+                sourceTexture,
+                element.contentRect,
+                backgroundColor,
+                resolvedSettings.Glow,
+                element.resolvedStyle.opacity,
+                element.resolvedStyle.visibility,
+                element.resolvedStyle.display);
+
+            overflowController.SetExpanded(outlineOverlayController.IsVisible || glowOverlayController.IsVisible);
         }
 
         private void SuppressBackgroundImageTint()

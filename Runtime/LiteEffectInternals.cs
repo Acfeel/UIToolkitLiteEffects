@@ -369,6 +369,77 @@ namespace Acfeel.UIToolkitLiteEffects
         }
     }
 
+    internal sealed class LiteEffectOverflowController : IDisposable
+    {
+        private readonly VisualElement element;
+        private VisualElement host;
+        private StyleEnum<Overflow> originalInlineOverflow;
+        private bool overflowCaptured;
+        private bool expanded;
+
+        public LiteEffectOverflowController(VisualElement element)
+        {
+            this.element = element;
+        }
+
+        public void SetExpanded(bool shouldExpand)
+        {
+            var parent = element.parent;
+            if (parent == null)
+            {
+                RestoreOverflow();
+                return;
+            }
+
+            if (host != null && host != parent)
+            {
+                RestoreOverflow();
+            }
+
+            host = parent;
+            if (!overflowCaptured)
+            {
+                originalInlineOverflow = host.style.overflow;
+                overflowCaptured = true;
+            }
+
+            if (shouldExpand)
+            {
+                if (!expanded)
+                {
+                    expanded = true;
+                    host.style.overflow = Overflow.Visible;
+                }
+
+                return;
+            }
+
+            RestoreOverflow();
+        }
+
+        public void Dispose()
+        {
+            RestoreOverflow();
+        }
+
+        private void RestoreOverflow()
+        {
+            if (!expanded)
+            {
+                host = element.parent;
+                return;
+            }
+
+            expanded = false;
+            if (host != null)
+            {
+                host.style.overflow = originalInlineOverflow;
+            }
+
+            host = element.parent;
+        }
+    }
+
     internal sealed class LiteEffectOutlineOverlayController : IDisposable
     {
         private readonly VisualElement element;
@@ -377,12 +448,9 @@ namespace Acfeel.UIToolkitLiteEffects
         private VisualElement outlineOverlayHost;
         private RenderTexture outlineTexture;
         private Material outlineMaterial;
-        private StyleEnum<Overflow> originalInlineOverflow;
         private Vector2Int outlineTextureSize;
         private Color outlineOverlayColor = Color.clear;
         private float outlineOverlayThickness;
-        private bool overflowCaptured;
-        private bool overflowExpanded;
         private IOutlineRenderer activeOutlineRenderer;
 
         public LiteEffectOutlineOverlayController(VisualElement element)
@@ -390,6 +458,8 @@ namespace Acfeel.UIToolkitLiteEffects
             this.element = element;
             outlineShader = ResolveShader("AcfeelUIToolkitLiteOutline", "Hidden/Acfeel/UIToolkitLiteOutline");
         }
+
+        public bool IsVisible { get; private set; }
 
         public void Update(Texture sourceTexture, Rect contentRect, ResolvedOutlineSettings outline, float opacity, Visibility visibility, DisplayStyle display)
         {
@@ -427,10 +497,10 @@ namespace Acfeel.UIToolkitLiteEffects
             outlineOverlayElement.style.display = display == DisplayStyle.None ? DisplayStyle.None : DisplayStyle.Flex;
             outlineOverlayElement.style.backgroundImage = StyleKeyword.Null;
             outlineOverlayElement.style.backgroundColor = StyleKeyword.Null;
-            UpdateOverflowState(true);
 
             outlineOverlayColor = new Color(outline.Color.r, outline.Color.g, outline.Color.b, outline.Color.a * outline.Opacity);
             outlineOverlayThickness = Mathf.Max(1f, outline.Thickness);
+            IsVisible = display != DisplayStyle.None;
 
             if (activeOutlineRenderer.RequiresTexture)
             {
@@ -464,8 +534,8 @@ namespace Acfeel.UIToolkitLiteEffects
             activeOutlineRenderer = null;
             outlineOverlayColor = Color.clear;
             outlineOverlayThickness = 0f;
+            IsVisible = false;
             ReleaseOutlineTexture();
-            RestoreOverflow();
         }
 
         public void Detach()
@@ -601,45 +671,255 @@ namespace Acfeel.UIToolkitLiteEffects
             outlineTexture = null;
         }
 
-        private void UpdateOverflowState(bool expanded)
+        private static Shader ResolveShader(string resourceName, string shaderName)
         {
-            if (outlineOverlayHost == null)
+            var shader = Resources.Load<Shader>(resourceName);
+            if (shader == null)
             {
-                return;
+                shader = Shader.Find(shaderName);
             }
 
-            if (!overflowCaptured)
+            if (shader == null)
             {
-                originalInlineOverflow = outlineOverlayHost.style.overflow;
-                overflowCaptured = true;
+                throw new InvalidOperationException($"{resourceName} shader was not found.");
             }
 
-            if (expanded)
-            {
-                if (!overflowExpanded)
-                {
-                    overflowExpanded = true;
-                    outlineOverlayHost.style.overflow = Overflow.Visible;
-                }
+            return shader;
+        }
+    }
 
-                return;
-            }
+    internal sealed class LiteEffectGlowOverlayController : IDisposable
+    {
+        private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
+        private static readonly int GlowColorId = Shader.PropertyToID("_GlowColor");
+        private static readonly int GlowStrengthId = Shader.PropertyToID("_GlowStrength");
+        private static readonly int GlowSpreadId = Shader.PropertyToID("_GlowSpread");
+        private static readonly int SourceAlphaMultiplierId = Shader.PropertyToID("_SourceAlphaMultiplier");
+        private static readonly int TexelSizeId = Shader.PropertyToID("_MainTexTexelSize");
+        private static readonly int ContentUvRectId = Shader.PropertyToID("_ContentUvRect");
 
-            RestoreOverflow();
+        private readonly VisualElement element;
+        private readonly Shader glowShader;
+        private VisualElement glowOverlayElement;
+        private VisualElement glowOverlayHost;
+        private RenderTexture glowTexture;
+        private Material glowMaterial;
+        private Vector2Int glowTextureSize;
+
+        public LiteEffectGlowOverlayController(VisualElement element)
+        {
+            this.element = element;
+            glowShader = ResolveShader("AcfeelUIToolkitLiteGlow", "Hidden/Acfeel/UIToolkitLiteGlow");
         }
 
-        private void RestoreOverflow()
+        public bool IsVisible { get; private set; }
+
+        public void Update(
+            Texture sourceTexture,
+            Rect contentRect,
+            Color backgroundColor,
+            ResolvedGlowSettings glow,
+            float opacity,
+            Visibility visibility,
+            DisplayStyle display)
         {
-            if (!overflowExpanded)
+            if (!glow.Enabled || glow.Strength <= 0.0001f || glow.Spread <= 0.0001f || contentRect.width <= 0f || contentRect.height <= 0f)
+            {
+                Hide();
+                return;
+            }
+
+            var sourceAlphaMultiplier = sourceTexture != null ? 1f : backgroundColor.a;
+            if (sourceAlphaMultiplier <= 0.0001f)
+            {
+                Hide();
+                return;
+            }
+
+            if (!EnsureOverlayHost())
+            {
+                Hide();
+                return;
+            }
+
+            var padding = Mathf.CeilToInt(Mathf.Max(2f, glow.Spread * 3f));
+            var targetSize = new Vector2Int(
+                Mathf.Clamp(Mathf.CeilToInt(contentRect.width) + padding * 2, 1, 2048),
+                Mathf.Clamp(Mathf.CeilToInt(contentRect.height) + padding * 2, 1, 2048));
+
+            var hostWorldRect = glowOverlayHost.worldBound;
+            var contentWorldRect = new Rect(
+                element.worldBound.xMin + contentRect.xMin,
+                element.worldBound.yMin + contentRect.yMin,
+                contentRect.width,
+                contentRect.height);
+
+            glowOverlayElement.style.left = contentWorldRect.xMin - hostWorldRect.xMin - padding;
+            glowOverlayElement.style.top = contentWorldRect.yMin - hostWorldRect.yMin - padding;
+            glowOverlayElement.style.width = targetSize.x;
+            glowOverlayElement.style.height = targetSize.y;
+            glowOverlayElement.style.opacity = opacity;
+            glowOverlayElement.style.visibility = visibility;
+            glowOverlayElement.style.display = display == DisplayStyle.None ? DisplayStyle.None : DisplayStyle.Flex;
+
+            EnsureGlowMaterial();
+            EnsureGlowTexture(targetSize);
+
+            var contentWidth = Mathf.Clamp(Mathf.CeilToInt(contentRect.width), 1, targetSize.x - padding * 2);
+            var contentHeight = Mathf.Clamp(Mathf.CeilToInt(contentRect.height), 1, targetSize.y - padding * 2);
+            var contentUvRect = new Vector4(
+                padding / (float)targetSize.x,
+                padding / (float)targetSize.y,
+                (padding + contentWidth) / (float)targetSize.x,
+                (padding + contentHeight) / (float)targetSize.y);
+
+            var glowSourceTexture = sourceTexture != null ? sourceTexture : Texture2D.whiteTexture;
+            glowMaterial.SetTexture(MainTexId, glowSourceTexture);
+            glowMaterial.SetColor(GlowColorId, glow.Color);
+            glowMaterial.SetFloat(GlowStrengthId, glow.Strength);
+            glowMaterial.SetFloat(GlowSpreadId, glow.Spread);
+            glowMaterial.SetFloat(SourceAlphaMultiplierId, sourceAlphaMultiplier);
+            glowMaterial.SetVector(TexelSizeId, new Vector4(1f / targetSize.x, 1f / targetSize.y, targetSize.x, targetSize.y));
+            glowMaterial.SetVector(ContentUvRectId, contentUvRect);
+            Graphics.Blit(glowSourceTexture, glowTexture, glowMaterial);
+
+            glowOverlayElement.style.backgroundImage = Background.FromRenderTexture(glowTexture);
+            glowOverlayElement.style.backgroundColor = StyleKeyword.Null;
+            IsVisible = display != DisplayStyle.None;
+        }
+
+        public void Hide()
+        {
+            if (glowOverlayElement != null)
+            {
+                glowOverlayElement.style.display = DisplayStyle.None;
+                glowOverlayElement.style.backgroundImage = StyleKeyword.Null;
+                glowOverlayElement.style.backgroundColor = StyleKeyword.Null;
+            }
+
+            IsVisible = false;
+            ReleaseGlowTexture();
+        }
+
+        public void Detach()
+        {
+            Hide();
+            if (glowOverlayElement != null)
+            {
+                glowOverlayElement.RemoveFromHierarchy();
+            }
+
+            glowOverlayHost = null;
+        }
+
+        public void Dispose()
+        {
+            Hide();
+
+            if (glowMaterial != null)
+            {
+                UnityEngine.Object.DestroyImmediate(glowMaterial);
+                glowMaterial = null;
+            }
+
+            if (glowOverlayElement != null)
+            {
+                glowOverlayElement.RemoveFromHierarchy();
+                glowOverlayElement = null;
+            }
+
+            glowOverlayHost = null;
+        }
+
+        private void EnsureGlowElement()
+        {
+            if (glowOverlayElement != null)
             {
                 return;
             }
 
-            overflowExpanded = false;
-            if (outlineOverlayHost != null)
+            glowOverlayElement = new VisualElement
             {
-                outlineOverlayHost.style.overflow = originalInlineOverflow;
+                pickingMode = PickingMode.Ignore
+            };
+            glowOverlayElement.style.position = Position.Absolute;
+            glowOverlayElement.style.display = DisplayStyle.None;
+        }
+
+        private bool EnsureOverlayHost()
+        {
+            var parent = element.parent;
+            if (parent == null)
+            {
+                return false;
             }
+
+            EnsureGlowElement();
+            if (glowOverlayElement.parent != parent)
+            {
+                glowOverlayElement.RemoveFromHierarchy();
+                parent.Insert(parent.IndexOf(element), glowOverlayElement);
+            }
+            else
+            {
+                var elementIndex = parent.IndexOf(element);
+                var overlayIndex = parent.IndexOf(glowOverlayElement);
+                if (overlayIndex >= elementIndex)
+                {
+                    glowOverlayElement.RemoveFromHierarchy();
+                    parent.Insert(elementIndex, glowOverlayElement);
+                }
+            }
+
+            glowOverlayHost = parent;
+            return true;
+        }
+
+        private void EnsureGlowMaterial()
+        {
+            if (glowMaterial != null)
+            {
+                return;
+            }
+
+            glowMaterial = new Material(glowShader)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+        }
+
+        private void EnsureGlowTexture(Vector2Int targetSize)
+        {
+            if (glowTexture != null && glowTextureSize == targetSize)
+            {
+                return;
+            }
+
+            ReleaseGlowTexture();
+
+            glowTexture = new RenderTexture(targetSize.x, targetSize.y, 0, RenderTextureFormat.ARGB32)
+            {
+                name = "UIToolkitLiteEffects_GlowRT",
+                hideFlags = HideFlags.HideAndDontSave,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear
+            };
+            glowTexture.Create();
+            glowTextureSize = targetSize;
+        }
+
+        private void ReleaseGlowTexture()
+        {
+            glowTextureSize = default;
+
+            if (glowTexture == null)
+            {
+                return;
+            }
+
+            glowTexture.Release();
+            UnityEngine.Object.DestroyImmediate(glowTexture);
+            glowTexture = null;
         }
 
         private static Shader ResolveShader(string resourceName, string shaderName)

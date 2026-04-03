@@ -166,6 +166,13 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 return saturate(neighborAlpha - sourceAlpha);
             }
 
+            float GetGlowMask(float2 uv, float sourceAlpha, float spread)
+            {
+                float innerMask = GetOutlineMask(uv, sourceAlpha, max(spread * 0.9, 0.0001));
+                float outerMask = GetOutlineMask(uv, sourceAlpha, max(spread * 1.8, 0.0001));
+                return saturate(innerMask * 0.7 + outerMask * 0.45);
+            }
+
             float3 SampleBlur(float2 uv, float radius)
             {
                 float2 texel = _MainTexTexelSize.xy * max(radius, 0.0001);
@@ -222,16 +229,16 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                     processed.a = saturate(processed.a + outlineMask * _OutlineColor.a);
                 }
 
-                if (_GlowEnabled > 0.5 && _GlowStrength > 0.0001 && _GlowSpread > 0.0001)
-                {
-                    float glowMask = GetOutlineMask(uv, source.a, _GlowSpread) * _GlowStrength;
-                    processed.rgb = saturate(processed.rgb + _GlowColor.rgb * glowMask * _GlowColor.a);
-                    processed.a = saturate(processed.a + glowMask * _GlowColor.a * 0.35);
-                }
-
                 if (_BlendEnabled > 0.5)
                 {
                     processed = ApplyMode(source, processed, _BlendMode, _BlendStrength);
+                }
+
+                if (_GlowEnabled > 0.5 && _GlowStrength > 0.0001 && _GlowSpread > 0.0001)
+                {
+                    float glowMask = GetGlowMask(uv, source.a, _GlowSpread) * _GlowStrength;
+                    processed.rgb = saturate(processed.rgb + _GlowColor.rgb * glowMask * _GlowColor.a);
+                    processed.a = saturate(processed.a + glowMask * _GlowColor.a * 0.5);
                 }
 
                 if (_DissolveEnabled > 0.5 && _DissolveAmount > 0.0001)

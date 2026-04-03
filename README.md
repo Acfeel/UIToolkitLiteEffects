@@ -203,6 +203,6 @@ icon.SetLiteEffect(new LiteEffectSettings());
 - テキストグリフそのものの加工ではなく、要素の矩形描画レイヤーに対する効果です
 - `backgroundImage` の元画像を動的に差し替えた場合は `LiteEffectHandle.Refresh()` または再設定を呼ぶと確実です
 - v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` に限定しています
-- `Glow` は bloom ではなく、輪郭共有の発光風表現です
+- `Glow` は bloom ではなく、要素外周へはみ出す軽量な発光オーバーレイです
 - `Blur` は背景を本当にぼかすガラス表現ではなく、要素内容をやわらかくする近似です
 - `Glitch` は強度がある間だけ再描画を継続するため、常用は低めの値を推奨します
