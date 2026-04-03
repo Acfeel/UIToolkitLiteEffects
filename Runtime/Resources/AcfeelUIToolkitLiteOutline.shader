@@ -19,6 +19,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteOutline"
             #pragma vertex vert
             #pragma fragment frag
             #include "UnityCG.cginc"
+            #include "AcfeelUIToolkitLiteDissolve.hlsl"
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
@@ -67,41 +68,6 @@ Shader "Hidden/Acfeel/UIToolkitLiteOutline"
                     (uv.y - _ContentUvRect.y) / max(_ContentUvRect.w - _ContentUvRect.y, 0.0001));
             }
 
-            float Hash21(float2 p)
-            {
-                p = frac(p * float2(123.34, 456.21));
-                p += dot(p, p + 78.233);
-                return frac(p.x * p.y);
-            }
-
-            float GetDissolveNoise(float2 uv)
-            {
-                float coarse = Hash21(floor(uv * 1024.0) + 11.0);
-                float fine = Hash21(floor(uv * 2048.0) + 29.0);
-                float micro = Hash21(floor(uv * 4096.0) + 37.0);
-                return saturate(coarse * 0.5 + fine * 0.3 + micro * 0.2);
-            }
-
-            float GetDissolveMask(float2 uv)
-            {
-                if (_DissolveEnabled <= 0.5)
-                {
-                    return 1.0;
-                }
-
-                float amount = saturate(_DissolveAmount);
-                float edgeWidth = max(_DissolveEdgeWidth, 0.0001);
-                if (amount >= 0.9999)
-                {
-                    return 0.0;
-                }
-
-                float microNoise = Hash21(floor(uv * 640.0) + 37.0);
-                float noise = saturate(GetDissolveNoise(uv) * 0.75 + microNoise * 0.25);
-                float transition = max(edgeWidth, 0.12);
-                return smoothstep(amount - transition, amount + transition, noise);
-            }
-
             float SampleAlpha(float2 uv)
             {
                 if (!IsInsideContent(uv))
@@ -135,7 +101,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteOutline"
                     neighborAlpha = max(neighborAlpha, SampleAlpha(uv + float2(-diagonal.x, -diagonal.y)));
                 }
 
-                return saturate(neighborAlpha - sourceAlpha) * _OutlineOpacity * GetDissolveMask(uv);
+                return saturate(neighborAlpha - sourceAlpha) * _OutlineOpacity * LiteEffectGetDissolveMask(uv, _DissolveEnabled, _DissolveAmount, _DissolveEdgeWidth);
             }
 
             float4 frag(v2f i) : SV_Target

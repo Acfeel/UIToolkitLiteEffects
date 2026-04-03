@@ -19,6 +19,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
             #pragma vertex vert
             #pragma fragment frag
             #include "UnityCG.cginc"
+            #include "AcfeelUIToolkitLiteDissolve.hlsl"
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
@@ -195,28 +196,6 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 return saturate(innerMask * 0.7 + outerMask * 0.45);
             }
 
-            float GetDissolveNoise(float2 uv)
-            {
-                float primary = Hash21(floor(uv * 160.0));
-                float secondary = Hash21(floor(uv * 320.0) + 17.0);
-                return saturate(primary * 0.7 + secondary * 0.3);
-            }
-
-            float GetDissolveMask(float2 uv, float amount, float edgeWidth)
-            {
-                float microNoise = Hash21(floor(uv * 640.0) + 37.0);
-                float noise = saturate(GetDissolveNoise(uv) * 0.75 + microNoise * 0.25);
-                amount = saturate(amount);
-                edgeWidth = max(edgeWidth, 0.0001);
-
-                if (amount >= 0.9999)
-                {
-                    return 0.0;
-                }
-
-                return smoothstep(amount - edgeWidth, amount + edgeWidth, noise);
-            }
-
             float3 SampleBlur(float2 uv, float radius)
             {
                 float2 texel = _MainTexTexelSize.xy * max(radius, 0.0001);
@@ -311,7 +290,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
 
                 if (_DissolveEnabled > 0.5 && _DissolveAmount > 0.0001)
                 {
-                    float dissolveMask = GetDissolveMask(uv, _DissolveAmount, _DissolveEdgeWidth);
+                    float dissolveMask = LiteEffectGetDissolveMask(uv, _DissolveEnabled, _DissolveAmount, _DissolveEdgeWidth);
                     processed.rgb *= dissolveMask;
                     processed.a *= dissolveMask;
 

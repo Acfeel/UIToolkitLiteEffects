@@ -107,6 +107,21 @@ namespace Acfeel.UIToolkitLiteEffects
         }
     }
 
+    internal static class LiteEffectDissolveUtility
+    {
+        public const float CompleteThreshold = 0.9995f;
+
+        public static bool IsComplete(ResolvedDissolveSettings dissolve)
+        {
+            return dissolve.Enabled && dissolve.Amount >= CompleteThreshold;
+        }
+
+        public static float GetFlatFade(ResolvedDissolveSettings dissolve)
+        {
+            return dissolve.Enabled ? Mathf.SmoothStep(1f, 0f, Mathf.Clamp01(dissolve.Amount)) : 1f;
+        }
+    }
+
     internal sealed class LiteEffectRenderTextureController : IDisposable
     {
         private readonly Shader effectShader;
@@ -442,7 +457,6 @@ namespace Acfeel.UIToolkitLiteEffects
 
     internal sealed class LiteEffectOutlineOverlayController : IDisposable
     {
-        private const float DissolveCompleteThreshold = 0.9995f;
         private static readonly int DissolveEnabledId = Shader.PropertyToID("_DissolveEnabled");
         private static readonly int DissolveAmountId = Shader.PropertyToID("_DissolveAmount");
         private static readonly int DissolveEdgeWidthId = Shader.PropertyToID("_DissolveEdgeWidth");
@@ -473,7 +487,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            if (dissolve.Enabled && dissolve.Amount >= DissolveCompleteThreshold)
+            if (LiteEffectDissolveUtility.IsComplete(dissolve))
             {
                 Hide();
                 return;
@@ -486,8 +500,7 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             activeOutlineRenderer = sourceTexture != null ? TransparentImageOutlineRenderer.Instance : ElementOutlineRenderer.Instance;
-            var dissolveAmount = Mathf.Clamp01(dissolve.Amount);
-            var dissolveFade = dissolve.Enabled ? Mathf.SmoothStep(1f, 0f, dissolveAmount) : 1f;
+            var dissolveFade = LiteEffectDissolveUtility.GetFlatFade(dissolve);
             var padding = activeOutlineRenderer.GetPadding(outline);
             var targetSize = new Vector2Int(
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.width) + padding * 2, 1, 2048),
@@ -709,7 +722,6 @@ namespace Acfeel.UIToolkitLiteEffects
 
     internal sealed class LiteEffectGlowOverlayController : IDisposable
     {
-        private const float DissolveCompleteThreshold = 0.9995f;
         private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
         private static readonly int GlowColorId = Shader.PropertyToID("_GlowColor");
         private static readonly int GlowStrengthId = Shader.PropertyToID("_GlowStrength");
@@ -753,7 +765,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            if (dissolve.Enabled && dissolve.Amount >= DissolveCompleteThreshold)
+            if (LiteEffectDissolveUtility.IsComplete(dissolve))
             {
                 Hide();
                 return;
