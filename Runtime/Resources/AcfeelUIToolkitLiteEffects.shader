@@ -36,6 +36,30 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
             float _BlendEnabled;
             float _BlendMode;
             float _BlendStrength;
+            float _OutlineEnabled;
+            float4 _OutlineColor;
+            float _OutlineThickness;
+            float _OutlineOpacity;
+            float _GlowEnabled;
+            float4 _GlowColor;
+            float _GlowStrength;
+            float _GlowSpread;
+            float _BlurEnabled;
+            float _BlurRadius;
+            float _BlurStrength;
+            float _DissolveEnabled;
+            float _DissolveAmount;
+            float _DissolveEdgeWidth;
+            float4 _DissolveEdgeColor;
+            float _GlitchEnabled;
+            float _GlitchIntensity;
+            float _GlitchJitter;
+            float _GlitchColorShift;
+            float _GlitchScanlineStrength;
+            float _LiteEffectTime;
+            float4 _MainTexTexelSize;
+            float4 _ContentUvRect;
+            float _OutlineOnly;
 
             struct appdata
             {
@@ -85,25 +109,149 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 return float4(saturate(additive.rgb), additive.a);
             }
 
+            float Hash21(float2 p)
+            {
+                p = frac(p * float2(123.34, 345.45));
+                p += dot(p, p + 34.345);
+                return frac(p.x * p.y);
+            }
+
+            bool IsInsideContent(float2 uv)
+            {
+                return uv.x >= _ContentUvRect.x
+                    && uv.y >= _ContentUvRect.y
+                    && uv.x <= _ContentUvRect.z
+                    && uv.y <= _ContentUvRect.w;
+            }
+
+            float2 RemapContentUv(float2 uv)
+            {
+                return float2(
+                    (uv.x - _ContentUvRect.x) / max(_ContentUvRect.z - _ContentUvRect.x, 0.0001),
+                    (uv.y - _ContentUvRect.y) / max(_ContentUvRect.w - _ContentUvRect.y, 0.0001));
+            }
+
+            float4 SampleSource(float2 uv)
+            {
+                if (!IsInsideContent(uv))
+                {
+                    return 0.0;
+                }
+
+                float2 sampleUv = saturate(RemapContentUv(uv));
+                float4 sample = tex2D(_MainTex, sampleUv) * _BaseColor;
+                float fringeFix = smoothstep(0.0, 0.2, sample.a);
+                sample.rgb *= fringeFix;
+                return sample;
+            }
+
+            float GetNeighborAlpha(float2 uv, float2 offset)
+            {
+                return SampleSource(uv + offset).a;
+            }
+
+            float GetOutlineMask(float2 uv, float sourceAlpha, float thickness)
+            {
+                float2 texel = _MainTexTexelSize.xy * max(thickness, 0.0001);
+                float neighborAlpha = 0.0;
+                neighborAlpha = max(neighborAlpha, GetNeighborAlpha(uv, float2(texel.x, 0.0)));
+                neighborAlpha = max(neighborAlpha, GetNeighborAlpha(uv, float2(-texel.x, 0.0)));
+                neighborAlpha = max(neighborAlpha, GetNeighborAlpha(uv, float2(0.0, texel.y)));
+                neighborAlpha = max(neighborAlpha, GetNeighborAlpha(uv, float2(0.0, -texel.y)));
+                float2 diagonal = texel * 0.70710678;
+                neighborAlpha = max(neighborAlpha, GetNeighborAlpha(uv, float2(diagonal.x, diagonal.y)));
+                neighborAlpha = max(neighborAlpha, GetNeighborAlpha(uv, float2(-diagonal.x, diagonal.y)));
+                neighborAlpha = max(neighborAlpha, GetNeighborAlpha(uv, float2(diagonal.x, -diagonal.y)));
+                neighborAlpha = max(neighborAlpha, GetNeighborAlpha(uv, float2(-diagonal.x, -diagonal.y)));
+                return saturate(neighborAlpha - sourceAlpha);
+            }
+
+            float3 SampleBlur(float2 uv, float radius)
+            {
+                float2 texel = _MainTexTexelSize.xy * max(radius, 0.0001);
+                float3 center = SampleSource(uv).rgb;
+                float3 cross =
+                    SampleSource(uv + float2(texel.x, 0.0)).rgb +
+                    SampleSource(uv + float2(-texel.x, 0.0)).rgb +
+                    SampleSource(uv + float2(0.0, texel.y)).rgb +
+                    SampleSource(uv + float2(0.0, -texel.y)).rgb;
+                return (center + cross * 0.5) / 3.0;
+            }
+
             float4 frag(v2f i) : SV_Target
             {
-                float4 source = tex2D(_MainTex, i.uv) * _BaseColor;
+                float2 uv = i.uv;
+                if (_GlitchEnabled > 0.5 && _GlitchIntensity > 0.0001)
+                {
+                    float lineNoise = Hash21(float2(floor(uv.y * 96.0), floor(_LiteEffectTime * 18.0)));
+                    float jitter = (lineNoise - 0.5) * _GlitchIntensity * _GlitchJitter * 0.08;
+                    uv.x = saturate(uv.x + jitter);
+                }
+
+                float4 source = SampleSource(uv);
+                if (_OutlineOnly > 0.5)
+                {
+                    float outlineMask = GetOutlineMask(uv, source.a, _OutlineThickness) * _OutlineOpacity;
+                    clip(outlineMask - 0.001);
+                    return float4(_OutlineColor.rgb, outlineMask * _OutlineColor.a);
+                }
+
                 float4 processed = source;
                 float brightness = (_Brightness - 0.5) * 2.0;
                 float contrast = max(0.0, _Contrast * 2.0);
                 float saturation = max(0.0, _Saturation * 2.0);
 
+                if (_BlurEnabled > 0.5 && _BlurRadius > 0.0001 && _BlurStrength > 0.0001)
+                {
+                    float3 blurred = SampleBlur(uv, _BlurRadius);
+                    processed.rgb = lerp(processed.rgb, blurred * _BaseColor.rgb, _BlurStrength);
+                }
+
                 if (_GradientEnabled > 0.5)
                 {
                     float2 direction = normalize(_GradientDirection.xy);
-                    float t = saturate(dot(i.uv - 0.5, direction) + 0.5);
+                    float t = saturate(dot(uv - 0.5, direction) + 0.5);
                     float4 gradient = lerp(_GradientFrom, _GradientTo, t);
                     processed = ApplyMode(processed, gradient, _GradientMode, 1.0);
+                }
+
+                if (_OutlineEnabled > 0.5 && _OutlineThickness > 0.0001 && _OutlineOpacity > 0.0001)
+                {
+                    float outlineMask = GetOutlineMask(uv, source.a, _OutlineThickness) * _OutlineOpacity;
+                    processed.rgb = lerp(processed.rgb, _OutlineColor.rgb, outlineMask * _OutlineColor.a);
+                    processed.a = saturate(processed.a + outlineMask * _OutlineColor.a);
+                }
+
+                if (_GlowEnabled > 0.5 && _GlowStrength > 0.0001 && _GlowSpread > 0.0001)
+                {
+                    float glowMask = GetOutlineMask(uv, source.a, _GlowSpread) * _GlowStrength;
+                    processed.rgb = saturate(processed.rgb + _GlowColor.rgb * glowMask * _GlowColor.a);
+                    processed.a = saturate(processed.a + glowMask * _GlowColor.a * 0.35);
                 }
 
                 if (_BlendEnabled > 0.5)
                 {
                     processed = ApplyMode(source, processed, _BlendMode, _BlendStrength);
+                }
+
+                if (_DissolveEnabled > 0.5 && _DissolveAmount > 0.0001)
+                {
+                    float noise = Hash21(floor(uv * 48.0) + floor(_LiteEffectTime * 8.0) * 0.0);
+                    float visible = step(_DissolveAmount, noise);
+                    float edge = 1.0 - smoothstep(_DissolveAmount, saturate(_DissolveAmount + max(_DissolveEdgeWidth, 0.0001)), noise);
+                    processed.rgb = lerp(processed.rgb, _DissolveEdgeColor.rgb, edge * _DissolveEdgeColor.a);
+                    processed.a *= visible + edge * (1.0 - visible);
+                }
+
+                if (_GlitchEnabled > 0.5 && _GlitchIntensity > 0.0001)
+                {
+                    float shift = _MainTexTexelSize.x * _GlitchColorShift * _GlitchIntensity * 8.0;
+                    float r = SampleSource(uv + float2(shift, 0.0)).r;
+                    float b = SampleSource(uv - float2(shift, 0.0)).b;
+                    processed.r = lerp(processed.r, r, _GlitchIntensity);
+                    processed.b = lerp(processed.b, b, _GlitchIntensity);
+                    float scan = sin((uv.y + _LiteEffectTime * 2.7) * 180.0) * 0.5 + 0.5;
+                    processed.rgb *= 1.0 - scan * _GlitchScanlineStrength * _GlitchIntensity * 0.25;
                 }
 
                 processed.rgb += brightness;

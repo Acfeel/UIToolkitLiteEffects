@@ -14,6 +14,22 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly CustomStyleProperty<float> GradientAngleProperty = new("--ac-litefx-gradient-angle");
         private static readonly CustomStyleProperty<string> BlendModeProperty = new("--ac-litefx-blend-mode");
         private static readonly CustomStyleProperty<float> BlendStrengthProperty = new("--ac-litefx-blend-strength");
+        private static readonly CustomStyleProperty<Color> OutlineColorProperty = new("--ac-litefx-outline-color");
+        private static readonly CustomStyleProperty<float> OutlineThicknessProperty = new("--ac-litefx-outline-thickness");
+        private static readonly CustomStyleProperty<float> OutlineOpacityProperty = new("--ac-litefx-outline-opacity");
+        private static readonly CustomStyleProperty<string> OutlineQualityProperty = new("--ac-litefx-outline-quality");
+        private static readonly CustomStyleProperty<Color> GlowColorProperty = new("--ac-litefx-glow-color");
+        private static readonly CustomStyleProperty<float> GlowStrengthProperty = new("--ac-litefx-glow-strength");
+        private static readonly CustomStyleProperty<float> GlowSpreadProperty = new("--ac-litefx-glow-spread");
+        private static readonly CustomStyleProperty<float> BlurRadiusProperty = new("--ac-litefx-blur-radius");
+        private static readonly CustomStyleProperty<float> BlurStrengthProperty = new("--ac-litefx-blur-strength");
+        private static readonly CustomStyleProperty<float> DissolveAmountProperty = new("--ac-litefx-dissolve-amount");
+        private static readonly CustomStyleProperty<float> DissolveEdgeWidthProperty = new("--ac-litefx-dissolve-edge-width");
+        private static readonly CustomStyleProperty<Color> DissolveEdgeColorProperty = new("--ac-litefx-dissolve-edge-color");
+        private static readonly CustomStyleProperty<float> GlitchIntensityProperty = new("--ac-litefx-glitch-intensity");
+        private static readonly CustomStyleProperty<float> GlitchJitterProperty = new("--ac-litefx-glitch-jitter");
+        private static readonly CustomStyleProperty<float> GlitchColorShiftProperty = new("--ac-litefx-glitch-color-shift");
+        private static readonly CustomStyleProperty<float> GlitchScanlineStrengthProperty = new("--ac-litefx-glitch-scanline-strength");
 
         public static LiteEffectSettings Read(ICustomStyle customStyle)
         {
@@ -77,6 +93,123 @@ namespace Acfeel.UIToolkitLiteEffects
                 if (customStyle.TryGetValue(BlendStrengthProperty, out blendStrength))
                 {
                     settings.Blend.Strength = blendStrength;
+                }
+            }
+
+            if (customStyle.TryGetValue(OutlineColorProperty, out var outlineColor)
+                || customStyle.TryGetValue(OutlineThicknessProperty, out var outlineThickness)
+                || customStyle.TryGetValue(OutlineOpacityProperty, out var outlineOpacity)
+                || customStyle.TryGetValue(OutlineQualityProperty, out var outlineQualityText))
+            {
+                settings.Outline = new OutlineSettings();
+
+                if (customStyle.TryGetValue(OutlineColorProperty, out outlineColor))
+                {
+                    settings.Outline.Color = outlineColor;
+                }
+
+                if (customStyle.TryGetValue(OutlineThicknessProperty, out outlineThickness))
+                {
+                    settings.Outline.Thickness = outlineThickness;
+                }
+
+                if (customStyle.TryGetValue(OutlineOpacityProperty, out outlineOpacity))
+                {
+                    settings.Outline.Opacity = outlineOpacity;
+                }
+
+                if (customStyle.TryGetValue(OutlineQualityProperty, out outlineQualityText)
+                    && Enum.TryParse<LiteEffectOutlineQuality>(outlineQualityText, true, out var outlineQuality))
+                {
+                    settings.Outline.Quality = outlineQuality;
+                }
+            }
+
+            if (customStyle.TryGetValue(GlowColorProperty, out var glowColor)
+                || customStyle.TryGetValue(GlowStrengthProperty, out var glowStrength)
+                || customStyle.TryGetValue(GlowSpreadProperty, out var glowSpread))
+            {
+                settings.Glow = new GlowSettings();
+
+                if (customStyle.TryGetValue(GlowColorProperty, out glowColor))
+                {
+                    settings.Glow.Color = glowColor;
+                }
+
+                if (customStyle.TryGetValue(GlowStrengthProperty, out glowStrength))
+                {
+                    settings.Glow.Strength = glowStrength;
+                }
+
+                if (customStyle.TryGetValue(GlowSpreadProperty, out glowSpread))
+                {
+                    settings.Glow.Spread = glowSpread;
+                }
+            }
+
+            if (customStyle.TryGetValue(BlurRadiusProperty, out var blurRadius)
+                || customStyle.TryGetValue(BlurStrengthProperty, out var blurStrength))
+            {
+                settings.Blur = new BlurSettings();
+
+                if (customStyle.TryGetValue(BlurRadiusProperty, out blurRadius))
+                {
+                    settings.Blur.Radius = blurRadius;
+                }
+
+                if (customStyle.TryGetValue(BlurStrengthProperty, out blurStrength))
+                {
+                    settings.Blur.Strength = blurStrength;
+                }
+            }
+
+            if (customStyle.TryGetValue(DissolveAmountProperty, out var dissolveAmount)
+                || customStyle.TryGetValue(DissolveEdgeWidthProperty, out var dissolveEdgeWidth)
+                || customStyle.TryGetValue(DissolveEdgeColorProperty, out var dissolveEdgeColor))
+            {
+                settings.Dissolve = new DissolveSettings();
+
+                if (customStyle.TryGetValue(DissolveAmountProperty, out dissolveAmount))
+                {
+                    settings.Dissolve.Amount = dissolveAmount;
+                }
+
+                if (customStyle.TryGetValue(DissolveEdgeWidthProperty, out dissolveEdgeWidth))
+                {
+                    settings.Dissolve.EdgeWidth = dissolveEdgeWidth;
+                }
+
+                if (customStyle.TryGetValue(DissolveEdgeColorProperty, out dissolveEdgeColor))
+                {
+                    settings.Dissolve.EdgeColor = dissolveEdgeColor;
+                }
+            }
+
+            if (customStyle.TryGetValue(GlitchIntensityProperty, out var glitchIntensity)
+                || customStyle.TryGetValue(GlitchJitterProperty, out var glitchJitter)
+                || customStyle.TryGetValue(GlitchColorShiftProperty, out var glitchColorShift)
+                || customStyle.TryGetValue(GlitchScanlineStrengthProperty, out var glitchScanlineStrength))
+            {
+                settings.Glitch = new GlitchSettings();
+
+                if (customStyle.TryGetValue(GlitchIntensityProperty, out glitchIntensity))
+                {
+                    settings.Glitch.Intensity = glitchIntensity;
+                }
+
+                if (customStyle.TryGetValue(GlitchJitterProperty, out glitchJitter))
+                {
+                    settings.Glitch.Jitter = glitchJitter;
+                }
+
+                if (customStyle.TryGetValue(GlitchColorShiftProperty, out glitchColorShift))
+                {
+                    settings.Glitch.ColorShift = glitchColorShift;
+                }
+
+                if (customStyle.TryGetValue(GlitchScanlineStrengthProperty, out glitchScanlineStrength))
+                {
+                    settings.Glitch.ScanlineStrength = glitchScanlineStrength;
                 }
             }
 

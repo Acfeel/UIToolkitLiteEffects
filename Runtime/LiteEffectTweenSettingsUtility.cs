@@ -15,7 +15,12 @@ namespace Acfeel.UIToolkitLiteEffects
             {
                 ColorAdjust = Clone(settings.ColorAdjust),
                 Gradient = Clone(settings.Gradient),
-                Blend = Clone(settings.Blend)
+                Blend = Clone(settings.Blend),
+                Outline = Clone(settings.Outline),
+                Glow = Clone(settings.Glow),
+                Blur = Clone(settings.Blur),
+                Dissolve = Clone(settings.Dissolve),
+                Glitch = Clone(settings.Glitch)
             };
         }
 
@@ -69,6 +74,87 @@ namespace Acfeel.UIToolkitLiteEffects
             };
         }
 
+        public static OutlineSettings Clone(OutlineSettings settings)
+        {
+            if (settings == null)
+            {
+                return null;
+            }
+
+            return new OutlineSettings
+            {
+                Enabled = settings.Enabled,
+                Color = settings.Color,
+                Thickness = settings.Thickness,
+                Opacity = settings.Opacity,
+                Quality = settings.Quality
+            };
+        }
+
+        public static GlowSettings Clone(GlowSettings settings)
+        {
+            if (settings == null)
+            {
+                return null;
+            }
+
+            return new GlowSettings
+            {
+                Enabled = settings.Enabled,
+                Color = settings.Color,
+                Strength = settings.Strength,
+                Spread = settings.Spread
+            };
+        }
+
+        public static BlurSettings Clone(BlurSettings settings)
+        {
+            if (settings == null)
+            {
+                return null;
+            }
+
+            return new BlurSettings
+            {
+                Enabled = settings.Enabled,
+                Radius = settings.Radius,
+                Strength = settings.Strength
+            };
+        }
+
+        public static DissolveSettings Clone(DissolveSettings settings)
+        {
+            if (settings == null)
+            {
+                return null;
+            }
+
+            return new DissolveSettings
+            {
+                Enabled = settings.Enabled,
+                Amount = settings.Amount,
+                EdgeWidth = settings.EdgeWidth,
+                EdgeColor = settings.EdgeColor
+            };
+        }
+
+        public static GlitchSettings Clone(GlitchSettings settings)
+        {
+            if (settings == null)
+            {
+                return null;
+            }
+
+            return new GlitchSettings
+            {
+                Enabled = settings.Enabled,
+                Intensity = settings.Intensity,
+                Jitter = settings.Jitter,
+                ColorShift = settings.ColorShift,
+                ScanlineStrength = settings.ScanlineStrength
+            };
+        }
+
         public static LiteEffectSettings FromResolved(ResolvedLiteEffectSettings resolved)
         {
             return new LiteEffectSettings
@@ -95,6 +181,42 @@ namespace Acfeel.UIToolkitLiteEffects
                     Enabled = resolved.Blend.Enabled,
                     Mode = resolved.Blend.Mode,
                     Strength = resolved.Blend.Strength
+                },
+                Outline = new OutlineSettings
+                {
+                    Enabled = resolved.Outline.Enabled,
+                    Color = resolved.Outline.Color,
+                    Thickness = resolved.Outline.Thickness,
+                    Opacity = resolved.Outline.Opacity,
+                    Quality = resolved.Outline.Quality
+                },
+                Glow = new GlowSettings
+                {
+                    Enabled = resolved.Glow.Enabled,
+                    Color = resolved.Glow.Color,
+                    Strength = resolved.Glow.Strength,
+                    Spread = resolved.Glow.Spread
+                },
+                Blur = new BlurSettings
+                {
+                    Enabled = resolved.Blur.Enabled,
+                    Radius = resolved.Blur.Radius,
+                    Strength = resolved.Blur.Strength
+                },
+                Dissolve = new DissolveSettings
+                {
+                    Enabled = resolved.Dissolve.Enabled,
+                    Amount = resolved.Dissolve.Amount,
+                    EdgeWidth = resolved.Dissolve.EdgeWidth,
+                    EdgeColor = resolved.Dissolve.EdgeColor
+                },
+                Glitch = new GlitchSettings
+                {
+                    Enabled = resolved.Glitch.Enabled,
+                    Intensity = resolved.Glitch.Intensity,
+                    Jitter = resolved.Glitch.Jitter,
+                    ColorShift = resolved.Glitch.ColorShift,
+                    ScanlineStrength = resolved.Glitch.ScanlineStrength
                 }
             };
         }
@@ -105,6 +227,11 @@ namespace Acfeel.UIToolkitLiteEffects
             ApplyColorAdjust(merged, overlay?.ColorAdjust);
             ApplyGradient(merged, overlay?.Gradient);
             ApplyBlend(merged, overlay?.Blend);
+            ApplyOutline(merged, overlay?.Outline);
+            ApplyGlow(merged, overlay?.Glow);
+            ApplyBlur(merged, overlay?.Blur);
+            ApplyDissolve(merged, overlay?.Dissolve);
+            ApplyGlitch(merged, overlay?.Glitch);
             return merged;
         }
 
@@ -114,7 +241,12 @@ namespace Acfeel.UIToolkitLiteEffects
             {
                 ColorAdjust = ExtractMasked(source?.ColorAdjust, mask?.ColorAdjust),
                 Gradient = ExtractMasked(source?.Gradient, mask?.Gradient),
-                Blend = ExtractMasked(source?.Blend, mask?.Blend)
+                Blend = ExtractMasked(source?.Blend, mask?.Blend),
+                Outline = ExtractMasked(source?.Outline, mask?.Outline),
+                Glow = ExtractMasked(source?.Glow, mask?.Glow),
+                Blur = ExtractMasked(source?.Blur, mask?.Blur),
+                Dissolve = ExtractMasked(source?.Dissolve, mask?.Dissolve),
+                Glitch = ExtractMasked(source?.Glitch, mask?.Glitch)
             };
         }
 
@@ -124,7 +256,12 @@ namespace Acfeel.UIToolkitLiteEffects
             {
                 ColorAdjust = LerpPartial(from?.ColorAdjust, to?.ColorAdjust, t),
                 Gradient = LerpPartial(from?.Gradient, to?.Gradient, t),
-                Blend = LerpPartial(from?.Blend, to?.Blend, t)
+                Blend = LerpPartial(from?.Blend, to?.Blend, t),
+                Outline = LerpPartial(from?.Outline, to?.Outline, t),
+                Glow = LerpPartial(from?.Glow, to?.Glow, t),
+                Blur = LerpPartial(from?.Blur, to?.Blur, t),
+                Dissolve = LerpPartial(from?.Dissolve, to?.Dissolve, t),
+                Glitch = LerpPartial(from?.Glitch, to?.Glitch, t)
             };
         }
 
@@ -132,7 +269,12 @@ namespace Acfeel.UIToolkitLiteEffects
         {
             return HasAnyAssignedField(settings?.ColorAdjust)
                 || HasAnyAssignedField(settings?.Gradient)
-                || HasAnyAssignedField(settings?.Blend);
+                || HasAnyAssignedField(settings?.Blend)
+                || HasAnyAssignedField(settings?.Outline)
+                || HasAnyAssignedField(settings?.Glow)
+                || HasAnyAssignedField(settings?.Blur)
+                || HasAnyAssignedField(settings?.Dissolve)
+                || HasAnyAssignedField(settings?.Glitch);
         }
 
         private static void ApplyColorAdjust(LiteEffectSettings destination, ColorAdjustSettings overlay)
@@ -235,6 +377,161 @@ namespace Acfeel.UIToolkitLiteEffects
             }
         }
 
+        private static void ApplyOutline(LiteEffectSettings destination, OutlineSettings overlay)
+        {
+            if (overlay == null)
+            {
+                return;
+            }
+
+            destination.Outline ??= new OutlineSettings();
+
+            if (overlay.Enabled.HasValue)
+            {
+                destination.Outline.Enabled = overlay.Enabled;
+            }
+
+            if (overlay.Color.HasValue)
+            {
+                destination.Outline.Color = overlay.Color;
+            }
+
+            if (overlay.Thickness.HasValue)
+            {
+                destination.Outline.Thickness = overlay.Thickness;
+            }
+
+            if (overlay.Opacity.HasValue)
+            {
+                destination.Outline.Opacity = overlay.Opacity;
+            }
+
+            if (overlay.Quality.HasValue)
+            {
+                destination.Outline.Quality = overlay.Quality;
+            }
+        }
+
+        private static void ApplyGlow(LiteEffectSettings destination, GlowSettings overlay)
+        {
+            if (overlay == null)
+            {
+                return;
+            }
+
+            destination.Glow ??= new GlowSettings();
+
+            if (overlay.Enabled.HasValue)
+            {
+                destination.Glow.Enabled = overlay.Enabled;
+            }
+
+            if (overlay.Color.HasValue)
+            {
+                destination.Glow.Color = overlay.Color;
+            }
+
+            if (overlay.Strength.HasValue)
+            {
+                destination.Glow.Strength = overlay.Strength;
+            }
+
+            if (overlay.Spread.HasValue)
+            {
+                destination.Glow.Spread = overlay.Spread;
+            }
+        }
+
+        private static void ApplyBlur(LiteEffectSettings destination, BlurSettings overlay)
+        {
+            if (overlay == null)
+            {
+                return;
+            }
+
+            destination.Blur ??= new BlurSettings();
+
+            if (overlay.Enabled.HasValue)
+            {
+                destination.Blur.Enabled = overlay.Enabled;
+            }
+
+            if (overlay.Radius.HasValue)
+            {
+                destination.Blur.Radius = overlay.Radius;
+            }
+
+            if (overlay.Strength.HasValue)
+            {
+                destination.Blur.Strength = overlay.Strength;
+            }
+        }
+
+        private static void ApplyDissolve(LiteEffectSettings destination, DissolveSettings overlay)
+        {
+            if (overlay == null)
+            {
+                return;
+            }
+
+            destination.Dissolve ??= new DissolveSettings();
+
+            if (overlay.Enabled.HasValue)
+            {
+                destination.Dissolve.Enabled = overlay.Enabled;
+            }
+
+            if (overlay.Amount.HasValue)
+            {
+                destination.Dissolve.Amount = overlay.Amount;
+            }
+
+            if (overlay.EdgeWidth.HasValue)
+            {
+                destination.Dissolve.EdgeWidth = overlay.EdgeWidth;
+            }
+
+            if (overlay.EdgeColor.HasValue)
+            {
+                destination.Dissolve.EdgeColor = overlay.EdgeColor;
+            }
+        }
+
+        private static void ApplyGlitch(LiteEffectSettings destination, GlitchSettings overlay)
+        {
+            if (overlay == null)
+            {
+                return;
+            }
+
+            destination.Glitch ??= new GlitchSettings();
+
+            if (overlay.Enabled.HasValue)
+            {
+                destination.Glitch.Enabled = overlay.Enabled;
+            }
+
+            if (overlay.Intensity.HasValue)
+            {
+                destination.Glitch.Intensity = overlay.Intensity;
+            }
+
+            if (overlay.Jitter.HasValue)
+            {
+                destination.Glitch.Jitter = overlay.Jitter;
+            }
+
+            if (overlay.ColorShift.HasValue)
+            {
+                destination.Glitch.ColorShift = overlay.ColorShift;
+            }
+
+            if (overlay.ScanlineStrength.HasValue)
+            {
+                destination.Glitch.ScanlineStrength = overlay.ScanlineStrength;
+            }
+        }
+
         private static ColorAdjustSettings ExtractMasked(ColorAdjustSettings source, ColorAdjustSettings mask)
         {
             if (mask == null)
@@ -282,6 +579,87 @@ namespace Acfeel.UIToolkitLiteEffects
                 Enabled = mask.Enabled.HasValue ? source?.Enabled : null,
                 Mode = mask.Mode.HasValue ? source?.Mode : null,
                 Strength = mask.Strength.HasValue ? source?.Strength : null
+            };
+        }
+
+        private static OutlineSettings ExtractMasked(OutlineSettings source, OutlineSettings mask)
+        {
+            if (mask == null)
+            {
+                return null;
+            }
+
+            return new OutlineSettings
+            {
+                Enabled = mask.Enabled.HasValue ? source?.Enabled : null,
+                Color = mask.Color.HasValue ? source?.Color : null,
+                Thickness = mask.Thickness.HasValue ? source?.Thickness : null,
+                Opacity = mask.Opacity.HasValue ? source?.Opacity : null,
+                Quality = mask.Quality.HasValue ? source?.Quality : null
+            };
+        }
+
+        private static GlowSettings ExtractMasked(GlowSettings source, GlowSettings mask)
+        {
+            if (mask == null)
+            {
+                return null;
+            }
+
+            return new GlowSettings
+            {
+                Enabled = mask.Enabled.HasValue ? source?.Enabled : null,
+                Color = mask.Color.HasValue ? source?.Color : null,
+                Strength = mask.Strength.HasValue ? source?.Strength : null,
+                Spread = mask.Spread.HasValue ? source?.Spread : null
+            };
+        }
+
+        private static BlurSettings ExtractMasked(BlurSettings source, BlurSettings mask)
+        {
+            if (mask == null)
+            {
+                return null;
+            }
+
+            return new BlurSettings
+            {
+                Enabled = mask.Enabled.HasValue ? source?.Enabled : null,
+                Radius = mask.Radius.HasValue ? source?.Radius : null,
+                Strength = mask.Strength.HasValue ? source?.Strength : null
+            };
+        }
+
+        private static DissolveSettings ExtractMasked(DissolveSettings source, DissolveSettings mask)
+        {
+            if (mask == null)
+            {
+                return null;
+            }
+
+            return new DissolveSettings
+            {
+                Enabled = mask.Enabled.HasValue ? source?.Enabled : null,
+                Amount = mask.Amount.HasValue ? source?.Amount : null,
+                EdgeWidth = mask.EdgeWidth.HasValue ? source?.EdgeWidth : null,
+                EdgeColor = mask.EdgeColor.HasValue ? source?.EdgeColor : null
+            };
+        }
+
+        private static GlitchSettings ExtractMasked(GlitchSettings source, GlitchSettings mask)
+        {
+            if (mask == null)
+            {
+                return null;
+            }
+
+            return new GlitchSettings
+            {
+                Enabled = mask.Enabled.HasValue ? source?.Enabled : null,
+                Intensity = mask.Intensity.HasValue ? source?.Intensity : null,
+                Jitter = mask.Jitter.HasValue ? source?.Jitter : null,
+                ColorShift = mask.ColorShift.HasValue ? source?.ColorShift : null,
+                ScanlineStrength = mask.ScanlineStrength.HasValue ? source?.ScanlineStrength : null
             };
         }
 
@@ -335,6 +713,87 @@ namespace Acfeel.UIToolkitLiteEffects
             };
         }
 
+        private static OutlineSettings LerpPartial(OutlineSettings from, OutlineSettings to, float t)
+        {
+            if (from == null && to == null)
+            {
+                return null;
+            }
+
+            return new OutlineSettings
+            {
+                Enabled = LerpBool(from?.Enabled, to?.Enabled, t),
+                Color = LerpColor(from?.Color, to?.Color, t),
+                Thickness = LerpFloat(from?.Thickness, to?.Thickness, t),
+                Opacity = LerpFloat(from?.Opacity, to?.Opacity, t),
+                Quality = LerpEnum(from?.Quality, to?.Quality, t)
+            };
+        }
+
+        private static GlowSettings LerpPartial(GlowSettings from, GlowSettings to, float t)
+        {
+            if (from == null && to == null)
+            {
+                return null;
+            }
+
+            return new GlowSettings
+            {
+                Enabled = LerpBool(from?.Enabled, to?.Enabled, t),
+                Color = LerpColor(from?.Color, to?.Color, t),
+                Strength = LerpFloat(from?.Strength, to?.Strength, t),
+                Spread = LerpFloat(from?.Spread, to?.Spread, t)
+            };
+        }
+
+        private static BlurSettings LerpPartial(BlurSettings from, BlurSettings to, float t)
+        {
+            if (from == null && to == null)
+            {
+                return null;
+            }
+
+            return new BlurSettings
+            {
+                Enabled = LerpBool(from?.Enabled, to?.Enabled, t),
+                Radius = LerpFloat(from?.Radius, to?.Radius, t),
+                Strength = LerpFloat(from?.Strength, to?.Strength, t)
+            };
+        }
+
+        private static DissolveSettings LerpPartial(DissolveSettings from, DissolveSettings to, float t)
+        {
+            if (from == null && to == null)
+            {
+                return null;
+            }
+
+            return new DissolveSettings
+            {
+                Enabled = LerpBool(from?.Enabled, to?.Enabled, t),
+                Amount = LerpFloat(from?.Amount, to?.Amount, t),
+                EdgeWidth = LerpFloat(from?.EdgeWidth, to?.EdgeWidth, t),
+                EdgeColor = LerpColor(from?.EdgeColor, to?.EdgeColor, t)
+            };
+        }
+
+        private static GlitchSettings LerpPartial(GlitchSettings from, GlitchSettings to, float t)
+        {
+            if (from == null && to == null)
+            {
+                return null;
+            }
+
+            return new GlitchSettings
+            {
+                Enabled = LerpBool(from?.Enabled, to?.Enabled, t),
+                Intensity = LerpFloat(from?.Intensity, to?.Intensity, t),
+                Jitter = LerpFloat(from?.Jitter, to?.Jitter, t),
+                ColorShift = LerpFloat(from?.ColorShift, to?.ColorShift, t),
+                ScanlineStrength = LerpFloat(from?.ScanlineStrength, to?.ScanlineStrength, t)
+            };
+        }
+
         private static bool HasAnyAssignedField(ColorAdjustSettings settings)
         {
             return settings != null
@@ -362,6 +821,52 @@ namespace Acfeel.UIToolkitLiteEffects
                 && (settings.Enabled.HasValue
                 || settings.Mode.HasValue
                 || settings.Strength.HasValue);
+        }
+
+        private static bool HasAnyAssignedField(OutlineSettings settings)
+        {
+            return settings != null
+                && (settings.Enabled.HasValue
+                || settings.Color.HasValue
+                || settings.Thickness.HasValue
+                || settings.Opacity.HasValue
+                || settings.Quality.HasValue);
+        }
+
+        private static bool HasAnyAssignedField(GlowSettings settings)
+        {
+            return settings != null
+                && (settings.Enabled.HasValue
+                || settings.Color.HasValue
+                || settings.Strength.HasValue
+                || settings.Spread.HasValue);
+        }
+
+        private static bool HasAnyAssignedField(BlurSettings settings)
+        {
+            return settings != null
+                && (settings.Enabled.HasValue
+                || settings.Radius.HasValue
+                || settings.Strength.HasValue);
+        }
+
+        private static bool HasAnyAssignedField(DissolveSettings settings)
+        {
+            return settings != null
+                && (settings.Enabled.HasValue
+                || settings.Amount.HasValue
+                || settings.EdgeWidth.HasValue
+                || settings.EdgeColor.HasValue);
+        }
+
+        private static bool HasAnyAssignedField(GlitchSettings settings)
+        {
+            return settings != null
+                && (settings.Enabled.HasValue
+                || settings.Intensity.HasValue
+                || settings.Jitter.HasValue
+                || settings.ColorShift.HasValue
+                || settings.ScanlineStrength.HasValue);
         }
 
         private static float? LerpFloat(float? from, float? to, float t)
@@ -395,6 +900,16 @@ namespace Acfeel.UIToolkitLiteEffects
         }
 
         private static LiteEffectBlendMode? LerpEnum(LiteEffectBlendMode? from, LiteEffectBlendMode? to, float t)
+        {
+            if (!from.HasValue || !to.HasValue)
+            {
+                return null;
+            }
+
+            return t >= 1f ? to.Value : from.Value;
+        }
+
+        private static LiteEffectOutlineQuality? LerpEnum(LiteEffectOutlineQuality? from, LiteEffectOutlineQuality? to, float t)
         {
             if (!from.HasValue || !to.HasValue)
             {

@@ -9,6 +9,11 @@ namespace Acfeel.UIToolkitLiteEffects
         public ColorAdjustSettings ColorAdjust;
         public GradientSettings Gradient;
         public BlendSettings Blend;
+        public OutlineSettings Outline;
+        public GlowSettings Glow;
+        public BlurSettings Blur;
+        public DissolveSettings Dissolve;
+        public GlitchSettings Glitch;
     }
 
     [Serializable]
@@ -40,6 +45,52 @@ namespace Acfeel.UIToolkitLiteEffects
         public float? Strength;
     }
 
+    [Serializable]
+    public sealed class OutlineSettings
+    {
+        public bool? Enabled;
+        public Color? Color;
+        public float? Thickness;
+        public float? Opacity;
+        public LiteEffectOutlineQuality? Quality;
+    }
+
+    [Serializable]
+    public sealed class GlowSettings
+    {
+        public bool? Enabled;
+        public Color? Color;
+        public float? Strength;
+        public float? Spread;
+    }
+
+    [Serializable]
+    public sealed class BlurSettings
+    {
+        public bool? Enabled;
+        public float? Radius;
+        public float? Strength;
+    }
+
+    [Serializable]
+    public sealed class DissolveSettings
+    {
+        public bool? Enabled;
+        public float? Amount;
+        public float? EdgeWidth;
+        public Color? EdgeColor;
+    }
+
+    [Serializable]
+    public sealed class GlitchSettings
+    {
+        public bool? Enabled;
+        public float? Intensity;
+        public float? Jitter;
+        public float? ColorShift;
+        public float? ScanlineStrength;
+    }
+
     public enum LiteEffectBlendMode
     {
         Mix = 0,
@@ -47,16 +98,32 @@ namespace Acfeel.UIToolkitLiteEffects
         Additive = 2
     }
 
+    public enum LiteEffectOutlineQuality
+    {
+        Low = 0,
+        Normal = 1
+    }
+
     internal readonly struct ResolvedLiteEffectSettings
     {
         public ResolvedLiteEffectSettings(
             ResolvedColorAdjustSettings colorAdjust,
             ResolvedGradientSettings gradient,
-            ResolvedBlendSettings blend)
+            ResolvedBlendSettings blend,
+            ResolvedOutlineSettings outline,
+            ResolvedGlowSettings glow,
+            ResolvedBlurSettings blur,
+            ResolvedDissolveSettings dissolve,
+            ResolvedGlitchSettings glitch)
         {
             ColorAdjust = colorAdjust;
             Gradient = gradient;
             Blend = blend;
+            Outline = outline;
+            Glow = glow;
+            Blur = blur;
+            Dissolve = dissolve;
+            Glitch = glitch;
         }
 
         public ResolvedColorAdjustSettings ColorAdjust { get; }
@@ -65,7 +132,27 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public ResolvedBlendSettings Blend { get; }
 
-        public bool HasAnyEffect => ColorAdjust.Enabled || Gradient.Enabled || Blend.Enabled;
+        public ResolvedOutlineSettings Outline { get; }
+
+        public ResolvedGlowSettings Glow { get; }
+
+        public ResolvedBlurSettings Blur { get; }
+
+        public ResolvedDissolveSettings Dissolve { get; }
+
+        public ResolvedGlitchSettings Glitch { get; }
+
+        public bool HasAnyEffect =>
+            ColorAdjust.Enabled
+            || Gradient.Enabled
+            || Blend.Enabled
+            || Outline.Enabled
+            || Glow.Enabled
+            || Blur.Enabled
+            || Dissolve.Enabled
+            || Glitch.Enabled;
+
+        public bool RequiresRealtimeRefresh => Glitch.Enabled && Glitch.Intensity > 0.0001f;
     }
 
     internal readonly struct ResolvedColorAdjustSettings
@@ -87,15 +174,10 @@ namespace Acfeel.UIToolkitLiteEffects
         }
 
         public bool Enabled { get; }
-
         public float Brightness { get; }
-
         public float Contrast { get; }
-
         public float Saturation { get; }
-
         public Color Multiply { get; }
-
         public Color Add { get; }
     }
 
@@ -116,13 +198,9 @@ namespace Acfeel.UIToolkitLiteEffects
         }
 
         public bool Enabled { get; }
-
         public Color From { get; }
-
         public Color To { get; }
-
         public float Angle { get; }
-
         public LiteEffectBlendMode Mode { get; }
     }
 
@@ -136,10 +214,90 @@ namespace Acfeel.UIToolkitLiteEffects
         }
 
         public bool Enabled { get; }
-
         public LiteEffectBlendMode Mode { get; }
-
         public float Strength { get; }
+    }
+
+    internal readonly struct ResolvedOutlineSettings
+    {
+        public ResolvedOutlineSettings(bool enabled, Color color, float thickness, float opacity, LiteEffectOutlineQuality quality)
+        {
+            Enabled = enabled;
+            Color = color;
+            Thickness = thickness;
+            Opacity = opacity;
+            Quality = quality;
+        }
+
+        public bool Enabled { get; }
+        public Color Color { get; }
+        public float Thickness { get; }
+        public float Opacity { get; }
+        public LiteEffectOutlineQuality Quality { get; }
+    }
+
+    internal readonly struct ResolvedGlowSettings
+    {
+        public ResolvedGlowSettings(bool enabled, Color color, float strength, float spread)
+        {
+            Enabled = enabled;
+            Color = color;
+            Strength = strength;
+            Spread = spread;
+        }
+
+        public bool Enabled { get; }
+        public Color Color { get; }
+        public float Strength { get; }
+        public float Spread { get; }
+    }
+
+    internal readonly struct ResolvedBlurSettings
+    {
+        public ResolvedBlurSettings(bool enabled, float radius, float strength)
+        {
+            Enabled = enabled;
+            Radius = radius;
+            Strength = strength;
+        }
+
+        public bool Enabled { get; }
+        public float Radius { get; }
+        public float Strength { get; }
+    }
+
+    internal readonly struct ResolvedDissolveSettings
+    {
+        public ResolvedDissolveSettings(bool enabled, float amount, float edgeWidth, Color edgeColor)
+        {
+            Enabled = enabled;
+            Amount = amount;
+            EdgeWidth = edgeWidth;
+            EdgeColor = edgeColor;
+        }
+
+        public bool Enabled { get; }
+        public float Amount { get; }
+        public float EdgeWidth { get; }
+        public Color EdgeColor { get; }
+    }
+
+    internal readonly struct ResolvedGlitchSettings
+    {
+        public ResolvedGlitchSettings(bool enabled, float intensity, float jitter, float colorShift, float scanlineStrength)
+        {
+            Enabled = enabled;
+            Intensity = intensity;
+            Jitter = jitter;
+            ColorShift = colorShift;
+            ScanlineStrength = scanlineStrength;
+        }
+
+        public bool Enabled { get; }
+        public float Intensity { get; }
+        public float Jitter { get; }
+        public float ColorShift { get; }
+        public float ScanlineStrength { get; }
     }
 
     internal static class LiteEffectSettingsResolver
@@ -149,7 +307,12 @@ namespace Acfeel.UIToolkitLiteEffects
             var colorAdjust = ResolveColorAdjust(explicitSettings?.ColorAdjust, ussSettings?.ColorAdjust);
             var gradient = ResolveGradient(explicitSettings?.Gradient, ussSettings?.Gradient);
             var blend = ResolveBlend(explicitSettings?.Blend, ussSettings?.Blend);
-            return new ResolvedLiteEffectSettings(colorAdjust, gradient, blend);
+            var outline = ResolveOutline(explicitSettings?.Outline, ussSettings?.Outline);
+            var glow = ResolveGlow(explicitSettings?.Glow, ussSettings?.Glow);
+            var blur = ResolveBlur(explicitSettings?.Blur, ussSettings?.Blur);
+            var dissolve = ResolveDissolve(explicitSettings?.Dissolve, ussSettings?.Dissolve);
+            var glitch = ResolveGlitch(explicitSettings?.Glitch, ussSettings?.Glitch);
+            return new ResolvedLiteEffectSettings(colorAdjust, gradient, blend, outline, glow, blur, dissolve, glitch);
         }
 
         private static ResolvedColorAdjustSettings ResolveColorAdjust(ColorAdjustSettings explicitSettings, ColorAdjustSettings ussSettings)
@@ -194,6 +357,67 @@ namespace Acfeel.UIToolkitLiteEffects
                 ?? hasAssignedFields;
 
             return new ResolvedBlendSettings(enabled, mode, strength);
+        }
+
+        private static ResolvedOutlineSettings ResolveOutline(OutlineSettings explicitSettings, OutlineSettings ussSettings)
+        {
+            var color = explicitSettings?.Color ?? ussSettings?.Color ?? Color.black;
+            var thickness = Mathf.Clamp(explicitSettings?.Thickness ?? ussSettings?.Thickness ?? 0f, 0f, 4f);
+            var opacity = Mathf.Clamp01(explicitSettings?.Opacity ?? ussSettings?.Opacity ?? 0f);
+            var quality = explicitSettings?.Quality ?? ussSettings?.Quality ?? LiteEffectOutlineQuality.Normal;
+            var enabled = explicitSettings?.Enabled
+                ?? ussSettings?.Enabled
+                ?? (thickness > 0.0001f && opacity > 0.0001f);
+
+            return new ResolvedOutlineSettings(enabled, color, thickness, opacity, quality);
+        }
+
+        private static ResolvedGlowSettings ResolveGlow(GlowSettings explicitSettings, GlowSettings ussSettings)
+        {
+            var color = explicitSettings?.Color ?? ussSettings?.Color ?? Color.white;
+            var strength = Mathf.Clamp01(explicitSettings?.Strength ?? ussSettings?.Strength ?? 0f);
+            var spread = Mathf.Clamp(explicitSettings?.Spread ?? ussSettings?.Spread ?? 0f, 0f, 4f);
+            var enabled = explicitSettings?.Enabled
+                ?? ussSettings?.Enabled
+                ?? (strength > 0.0001f && spread > 0.0001f);
+
+            return new ResolvedGlowSettings(enabled, color, strength, spread);
+        }
+
+        private static ResolvedBlurSettings ResolveBlur(BlurSettings explicitSettings, BlurSettings ussSettings)
+        {
+            var radius = Mathf.Clamp(explicitSettings?.Radius ?? ussSettings?.Radius ?? 0f, 0f, 3f);
+            var strength = Mathf.Clamp01(explicitSettings?.Strength ?? ussSettings?.Strength ?? 0f);
+            var enabled = explicitSettings?.Enabled
+                ?? ussSettings?.Enabled
+                ?? (radius > 0.0001f && strength > 0.0001f);
+
+            return new ResolvedBlurSettings(enabled, radius, strength);
+        }
+
+        private static ResolvedDissolveSettings ResolveDissolve(DissolveSettings explicitSettings, DissolveSettings ussSettings)
+        {
+            var amount = Mathf.Clamp01(explicitSettings?.Amount ?? ussSettings?.Amount ?? 0f);
+            var edgeWidth = Mathf.Clamp01(explicitSettings?.EdgeWidth ?? ussSettings?.EdgeWidth ?? 0.08f);
+            var edgeColor = explicitSettings?.EdgeColor ?? ussSettings?.EdgeColor ?? new Color(1f, 0.65f, 0.2f, 1f);
+            var enabled = explicitSettings?.Enabled
+                ?? ussSettings?.Enabled
+                ?? amount > 0.0001f;
+
+            return new ResolvedDissolveSettings(enabled, amount, edgeWidth, edgeColor);
+        }
+
+        private static ResolvedGlitchSettings ResolveGlitch(GlitchSettings explicitSettings, GlitchSettings ussSettings)
+        {
+            var intensity = Mathf.Clamp01(explicitSettings?.Intensity ?? ussSettings?.Intensity ?? 0f);
+            var jitter = Mathf.Clamp01(explicitSettings?.Jitter ?? ussSettings?.Jitter ?? 0.5f);
+            var colorShift = Mathf.Clamp01(explicitSettings?.ColorShift ?? ussSettings?.ColorShift ?? 0.35f);
+            var scanlineStrength = Mathf.Clamp01(explicitSettings?.ScanlineStrength ?? ussSettings?.ScanlineStrength ?? 0.25f);
+            var enabled = explicitSettings?.Enabled
+                ?? ussSettings?.Enabled
+                ?? intensity > 0.0001f;
+
+            return new ResolvedGlitchSettings(enabled, intensity, jitter, colorShift, scanlineStrength);
         }
 
         private static bool HasAnyAssignedField(GradientSettings settings)

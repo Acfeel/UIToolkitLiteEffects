@@ -32,6 +32,41 @@ namespace Acfeel.UIToolkitLiteEffects
             return new LiteEffectHandle(element);
         }
 
+        public static LiteEffectHandle SetOutline(this VisualElement element, OutlineSettings settings)
+        {
+            var controller = LiteEffectControllerRegistry.GetOrCreate(element);
+            controller.SetOutline(settings);
+            return new LiteEffectHandle(element);
+        }
+
+        public static LiteEffectHandle SetGlow(this VisualElement element, GlowSettings settings)
+        {
+            var controller = LiteEffectControllerRegistry.GetOrCreate(element);
+            controller.SetGlow(settings);
+            return new LiteEffectHandle(element);
+        }
+
+        public static LiteEffectHandle SetBlur(this VisualElement element, BlurSettings settings)
+        {
+            var controller = LiteEffectControllerRegistry.GetOrCreate(element);
+            controller.SetBlur(settings);
+            return new LiteEffectHandle(element);
+        }
+
+        public static LiteEffectHandle SetDissolve(this VisualElement element, DissolveSettings settings)
+        {
+            var controller = LiteEffectControllerRegistry.GetOrCreate(element);
+            controller.SetDissolve(settings);
+            return new LiteEffectHandle(element);
+        }
+
+        public static LiteEffectHandle SetGlitch(this VisualElement element, GlitchSettings settings)
+        {
+            var controller = LiteEffectControllerRegistry.GetOrCreate(element);
+            controller.SetGlitch(settings);
+            return new LiteEffectHandle(element);
+        }
+
         public static void ClearLiteEffect(this VisualElement element)
         {
             LiteEffectControllerRegistry.GetOrCreate(element).ClearExplicit();

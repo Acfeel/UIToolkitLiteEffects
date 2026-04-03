@@ -20,37 +20,482 @@ namespace Acfeel.UIToolkitLiteEffects
         }
     }
 
-    internal sealed class LiteEffectController : IDisposable
+    internal static class LiteEffectMeshUtility
     {
-        private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
-        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-        private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
-        private static readonly int ContrastId = Shader.PropertyToID("_Contrast");
-        private static readonly int SaturationId = Shader.PropertyToID("_Saturation");
-        private static readonly int MultiplyId = Shader.PropertyToID("_Multiply");
-        private static readonly int AddId = Shader.PropertyToID("_Add");
-        private static readonly int GradientEnabledId = Shader.PropertyToID("_GradientEnabled");
-        private static readonly int GradientFromId = Shader.PropertyToID("_GradientFrom");
-        private static readonly int GradientToId = Shader.PropertyToID("_GradientTo");
-        private static readonly int GradientDirectionId = Shader.PropertyToID("_GradientDirection");
-        private static readonly int GradientModeId = Shader.PropertyToID("_GradientMode");
-        private static readonly int BlendEnabledId = Shader.PropertyToID("_BlendEnabled");
-        private static readonly int BlendModeId = Shader.PropertyToID("_BlendMode");
-        private static readonly int BlendStrengthId = Shader.PropertyToID("_BlendStrength");
+        public static Vertex CreateVertex(Vector2 position, Vector2 uv)
+        {
+            return new Vertex
+            {
+                position = new Vector3(position.x, position.y, Vertex.nearZ),
+                uv = uv,
+                tint = Color.white
+            };
+        }
 
+        public static Vertex CreateTintedVertex(Vector2 position, Vector2 uv, Color tint)
+        {
+            return new Vertex
+            {
+                position = new Vector3(position.x, position.y, Vertex.nearZ),
+                uv = uv,
+                tint = tint
+            };
+        }
+    }
+
+    internal sealed class LiteEffectTweenController : IDisposable
+    {
         private readonly VisualElement element;
-        private LiteEffectSettings explicitSettings = new();
-        private LiteEffectSettings ussSettings = new();
-        private LiteEffectSettings tweenSettings = new();
+        private readonly Action refreshAction;
         private IVisualElementScheduledItem tweenScheduledItem;
         private LiteEffectTweenRuntimeSequence activeTweenSequence;
-        private RenderTexture processedTexture;
-        private Material effectMaterial;
-        private StyleColor originalInlineTint;
-        private Vector2Int processedTextureSize;
         private double tweenStartTime;
+
+        public LiteEffectTweenController(VisualElement element, Action refreshAction)
+        {
+            this.element = element;
+            this.refreshAction = refreshAction;
+            TweenSettings = new LiteEffectSettings();
+        }
+
+        public bool HasTweenSettings { get; private set; }
+
+        public LiteEffectSettings TweenSettings { get; private set; }
+
+        public void PlaySequence(LiteEffectTweenSequenceDefinition sequence, LiteEffectSettings startState)
+        {
+            if (sequence == null || !sequence.HasTweens)
+            {
+                return;
+            }
+
+            var compiled = CompileTweenSequence(sequence, startState);
+            if (compiled == null)
+            {
+                return;
+            }
+
+            Kill(false, null);
+            activeTweenSequence = compiled;
+            tweenStartTime = Time.realtimeSinceStartupAsDouble;
+            EnsureScheduler();
+            UpdateTween();
+        }
+
+        public void Kill(bool keepCurrentValue, Action<LiteEffectSettings> promoteExplicit)
+        {
+            if (HasTweenSettings && keepCurrentValue)
+            {
+                promoteExplicit?.Invoke(LiteEffectTweenSettingsUtility.Clone(TweenSettings));
+            }
+
+            HasTweenSettings = false;
+            TweenSettings = new LiteEffectSettings();
+            activeTweenSequence = null;
+
+            if (tweenScheduledItem != null)
+            {
+                tweenScheduledItem.Pause();
+            }
+        }
+
+        public void Dispose()
+        {
+            Kill(false, null);
+        }
+
+        private LiteEffectTweenRuntimeSequence CompileTweenSequence(LiteEffectTweenSequenceDefinition sequence, LiteEffectSettings startState)
+        {
+            var currentState = LiteEffectTweenSettingsUtility.Clone(startState);
+            var runtimeGroups = new System.Collections.Generic.List<LiteEffectTweenRuntimeGroup>();
+
+            foreach (var group in sequence.Groups)
+            {
+                var runtimeGroup = new LiteEffectTweenRuntimeGroup
+                {
+                    BaseState = LiteEffectTweenSettingsUtility.Clone(currentState),
+                    EndState = LiteEffectTweenSettingsUtility.Clone(currentState)
+                };
+
+                var longestDuration = 0f;
+                foreach (var item in group.Items)
+                {
+                    if (item?.TargetSettings == null || !LiteEffectTweenSettingsUtility.HasAnyAssignedField(item.TargetSettings))
+                    {
+                        continue;
+                    }
+
+                    var startPartial = LiteEffectTweenSettingsUtility.ExtractMasked(currentState, item.TargetSettings);
+                    var targetState = LiteEffectTweenSettingsUtility.Merge(currentState, item.TargetSettings);
+                    var endPartial = LiteEffectTweenSettingsUtility.ExtractMasked(targetState, item.TargetSettings);
+
+                    runtimeGroup.Items.Add(new LiteEffectTweenRuntimeItem
+                    {
+                        FromValues = startPartial,
+                        ToValues = endPartial,
+                        Delay = Mathf.Max(0f, item.Delay),
+                        Duration = Mathf.Max(0f, item.Duration),
+                        Ease = item.Ease
+                    });
+
+                    runtimeGroup.EndState = LiteEffectTweenSettingsUtility.Merge(runtimeGroup.EndState, item.TargetSettings);
+                    longestDuration = Mathf.Max(longestDuration, Mathf.Max(0f, item.Delay) + Mathf.Max(0f, item.Duration));
+                }
+
+                if (runtimeGroup.Items.Count == 0)
+                {
+                    continue;
+                }
+
+                runtimeGroup.TotalDuration = longestDuration;
+                runtimeGroups.Add(runtimeGroup);
+                currentState = LiteEffectTweenSettingsUtility.Clone(runtimeGroup.EndState);
+            }
+
+            return runtimeGroups.Count == 0 ? null : new LiteEffectTweenRuntimeSequence(runtimeGroups, sequence.OnComplete);
+        }
+
+        private void EnsureScheduler()
+        {
+            tweenScheduledItem ??= element.schedule.Execute(UpdateTween).Every(16);
+            tweenScheduledItem.Resume();
+        }
+
+        private void UpdateTween()
+        {
+            if (activeTweenSequence == null)
+            {
+                Kill(false, null);
+                return;
+            }
+
+            if (element.panel == null)
+            {
+                return;
+            }
+
+            if (!activeTweenSequence.TryEvaluate((float)(Time.realtimeSinceStartupAsDouble - tweenStartTime), out var frame, out var completed)
+                || frame == null)
+            {
+                Kill(false, null);
+                return;
+            }
+
+            HasTweenSettings = true;
+            TweenSettings = LiteEffectTweenSettingsUtility.Clone(frame);
+            refreshAction?.Invoke();
+
+            if (!completed)
+            {
+                return;
+            }
+
+            var callback = activeTweenSequence.OnComplete;
+            Kill(false, null);
+            callback?.Invoke();
+        }
+    }
+
+    internal sealed class LiteEffectOutlineOverlayController : IDisposable
+    {
+        private readonly VisualElement element;
+        private readonly Shader outlineShader;
+        private VisualElement outlineOverlayElement;
+        private VisualElement outlineOverlayHost;
+        private RenderTexture outlineTexture;
+        private Material outlineMaterial;
+        private StyleEnum<Overflow> originalInlineOverflow;
+        private Vector2Int outlineTextureSize;
+        private Color outlineOverlayColor = Color.clear;
+        private float outlineOverlayThickness;
+        private bool overflowCaptured;
+        private bool overflowExpanded;
+        private IOutlineRenderer activeOutlineRenderer;
+
+        public LiteEffectOutlineOverlayController(VisualElement element)
+        {
+            this.element = element;
+            outlineShader = ResolveShader("AcfeelUIToolkitLiteOutline", "Hidden/Acfeel/UIToolkitLiteOutline");
+        }
+
+        public void Update(Texture sourceTexture, Rect contentRect, ResolvedOutlineSettings outline, float opacity, Visibility visibility, DisplayStyle display)
+        {
+            if (!outline.Enabled || outline.Opacity <= 0.0001f || outline.Thickness <= 0.0001f || contentRect.width <= 0f || contentRect.height <= 0f)
+            {
+                Hide();
+                return;
+            }
+
+            if (!EnsureOverlayHost())
+            {
+                Hide();
+                return;
+            }
+
+            activeOutlineRenderer = sourceTexture != null ? TransparentImageOutlineRenderer.Instance : ElementOutlineRenderer.Instance;
+            var padding = activeOutlineRenderer.GetPadding(outline);
+            var targetSize = new Vector2Int(
+                Mathf.Clamp(Mathf.CeilToInt(contentRect.width) + padding * 2, 1, 2048),
+                Mathf.Clamp(Mathf.CeilToInt(contentRect.height) + padding * 2, 1, 2048));
+
+            var hostWorldRect = outlineOverlayHost.worldBound;
+            var contentWorldRect = new Rect(
+                element.worldBound.xMin + contentRect.xMin,
+                element.worldBound.yMin + contentRect.yMin,
+                contentRect.width,
+                contentRect.height);
+
+            outlineOverlayElement.style.left = contentWorldRect.xMin - hostWorldRect.xMin - padding;
+            outlineOverlayElement.style.top = contentWorldRect.yMin - hostWorldRect.yMin - padding;
+            outlineOverlayElement.style.width = targetSize.x;
+            outlineOverlayElement.style.height = targetSize.y;
+            outlineOverlayElement.style.opacity = opacity;
+            outlineOverlayElement.style.visibility = visibility;
+            outlineOverlayElement.style.display = display == DisplayStyle.None ? DisplayStyle.None : DisplayStyle.Flex;
+            outlineOverlayElement.style.backgroundImage = StyleKeyword.Null;
+            outlineOverlayElement.style.backgroundColor = StyleKeyword.Null;
+            UpdateOverflowState(true);
+
+            outlineOverlayColor = new Color(outline.Color.r, outline.Color.g, outline.Color.b, outline.Color.a * outline.Opacity);
+            outlineOverlayThickness = Mathf.Max(1f, outline.Thickness);
+
+            if (activeOutlineRenderer.RequiresTexture)
+            {
+                if (sourceTexture == null)
+                {
+                    Hide();
+                    return;
+                }
+
+                EnsureOutlineMaterial();
+                EnsureOutlineTexture(targetSize);
+                activeOutlineRenderer.PrepareTexture(outlineMaterial, outlineTexture, sourceTexture, contentRect.size, targetSize, padding, outline);
+            }
+            else
+            {
+                ReleaseOutlineTexture();
+            }
+
+            outlineOverlayElement.MarkDirtyRepaint();
+        }
+
+        public void Hide()
+        {
+            if (outlineOverlayElement != null)
+            {
+                outlineOverlayElement.style.display = DisplayStyle.None;
+                outlineOverlayElement.style.backgroundImage = StyleKeyword.Null;
+                outlineOverlayElement.style.backgroundColor = StyleKeyword.Null;
+            }
+
+            activeOutlineRenderer = null;
+            outlineOverlayColor = Color.clear;
+            outlineOverlayThickness = 0f;
+            ReleaseOutlineTexture();
+            RestoreOverflow();
+        }
+
+        public void Detach()
+        {
+            Hide();
+            if (outlineOverlayElement != null)
+            {
+                outlineOverlayElement.RemoveFromHierarchy();
+            }
+
+            outlineOverlayHost = null;
+        }
+
+        public void Dispose()
+        {
+            Hide();
+
+            if (outlineMaterial != null)
+            {
+                UnityEngine.Object.DestroyImmediate(outlineMaterial);
+                outlineMaterial = null;
+            }
+
+            if (outlineOverlayElement != null)
+            {
+                outlineOverlayElement.generateVisualContent -= OnGenerateVisualContent;
+                outlineOverlayElement.RemoveFromHierarchy();
+                outlineOverlayElement = null;
+            }
+
+            outlineOverlayHost = null;
+        }
+
+        private void OnGenerateVisualContent(MeshGenerationContext context)
+        {
+            if (activeOutlineRenderer == null || outlineOverlayElement == null)
+            {
+                return;
+            }
+
+            activeOutlineRenderer.Generate(context, outlineOverlayElement.contentRect, outlineTexture, outlineOverlayColor, outlineOverlayThickness);
+        }
+
+        private void EnsureOverlayElement()
+        {
+            if (outlineOverlayElement != null)
+            {
+                return;
+            }
+
+            outlineOverlayElement = new VisualElement
+            {
+                pickingMode = PickingMode.Ignore
+            };
+            outlineOverlayElement.style.position = Position.Absolute;
+            outlineOverlayElement.style.display = DisplayStyle.None;
+            outlineOverlayElement.generateVisualContent += OnGenerateVisualContent;
+        }
+
+        private bool EnsureOverlayHost()
+        {
+            var parent = element.parent;
+            if (parent == null)
+            {
+                return false;
+            }
+
+            EnsureOverlayElement();
+            if (outlineOverlayElement.parent != parent)
+            {
+                outlineOverlayElement.RemoveFromHierarchy();
+                parent.Insert(parent.IndexOf(element), outlineOverlayElement);
+            }
+            else
+            {
+                var elementIndex = parent.IndexOf(element);
+                var overlayIndex = parent.IndexOf(outlineOverlayElement);
+                if (overlayIndex >= elementIndex)
+                {
+                    outlineOverlayElement.RemoveFromHierarchy();
+                    parent.Insert(elementIndex, outlineOverlayElement);
+                }
+            }
+
+            outlineOverlayHost = parent;
+            return true;
+        }
+
+        private void EnsureOutlineMaterial()
+        {
+            if (outlineMaterial != null)
+            {
+                return;
+            }
+
+            outlineMaterial = new Material(outlineShader)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+        }
+
+        private void EnsureOutlineTexture(Vector2Int targetSize)
+        {
+            if (outlineTexture != null && outlineTextureSize == targetSize)
+            {
+                return;
+            }
+
+            ReleaseOutlineTexture();
+
+            outlineTexture = new RenderTexture(targetSize.x, targetSize.y, 0, RenderTextureFormat.ARGB32)
+            {
+                name = "UIToolkitLiteEffects_OutlineRT",
+                hideFlags = HideFlags.HideAndDontSave,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear
+            };
+            outlineTexture.Create();
+            outlineTextureSize = targetSize;
+        }
+
+        private void ReleaseOutlineTexture()
+        {
+            outlineTextureSize = default;
+
+            if (outlineTexture == null)
+            {
+                return;
+            }
+
+            outlineTexture.Release();
+            UnityEngine.Object.DestroyImmediate(outlineTexture);
+            outlineTexture = null;
+        }
+
+        private void UpdateOverflowState(bool expanded)
+        {
+            if (outlineOverlayHost == null)
+            {
+                return;
+            }
+
+            if (!overflowCaptured)
+            {
+                originalInlineOverflow = outlineOverlayHost.style.overflow;
+                overflowCaptured = true;
+            }
+
+            if (expanded)
+            {
+                if (!overflowExpanded)
+                {
+                    overflowExpanded = true;
+                    outlineOverlayHost.style.overflow = Overflow.Visible;
+                }
+
+                return;
+            }
+
+            RestoreOverflow();
+        }
+
+        private void RestoreOverflow()
+        {
+            if (!overflowExpanded)
+            {
+                return;
+            }
+
+            overflowExpanded = false;
+            if (outlineOverlayHost != null)
+            {
+                outlineOverlayHost.style.overflow = originalInlineOverflow;
+            }
+        }
+
+        private static Shader ResolveShader(string resourceName, string shaderName)
+        {
+            var shader = Resources.Load<Shader>(resourceName);
+            if (shader == null)
+            {
+                shader = Shader.Find(shaderName);
+            }
+
+            if (shader == null)
+            {
+                throw new InvalidOperationException($"{resourceName} shader was not found.");
+            }
+
+            return shader;
+        }
+    }
+
+    internal sealed class LiteEffectController : IDisposable
+    {
+        private readonly VisualElement element;
+        private readonly LiteEffectRenderTextureController renderTextureController;
+        private readonly LiteEffectOutlineOverlayController outlineOverlayController;
+        private readonly LiteEffectTweenController tweenController;
+        private LiteEffectSettings explicitSettings = new();
+        private LiteEffectSettings ussSettings = new();
+        private StyleColor originalInlineTint;
         private bool hasExplicitSettings;
-        private bool hasTweenSettings;
         private bool dirty = true;
         private bool tintCaptured;
         private bool tintSuppressed;
@@ -59,6 +504,9 @@ namespace Acfeel.UIToolkitLiteEffects
         public LiteEffectController(VisualElement element)
         {
             this.element = element;
+            renderTextureController = new LiteEffectRenderTextureController();
+            outlineOverlayController = new LiteEffectOutlineOverlayController(element);
+            tweenController = new LiteEffectTweenController(element, Refresh);
             element.generateVisualContent += OnGenerateVisualContent;
             element.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             element.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -68,7 +516,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void Apply(LiteEffectSettings settings)
         {
-            KillActiveTween(false);
+            tweenController.Kill(false, PromoteExplicitSettings);
             explicitSettings = settings ?? new LiteEffectSettings();
             hasExplicitSettings = true;
             Refresh();
@@ -76,7 +524,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void SetColorAdjust(ColorAdjustSettings settings)
         {
-            KillActiveTween(false);
+            tweenController.Kill(false, PromoteExplicitSettings);
             explicitSettings ??= new LiteEffectSettings();
             explicitSettings.ColorAdjust = settings;
             hasExplicitSettings = true;
@@ -85,7 +533,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void SetGradient(GradientSettings settings)
         {
-            KillActiveTween(false);
+            tweenController.Kill(false, PromoteExplicitSettings);
             explicitSettings ??= new LiteEffectSettings();
             explicitSettings.Gradient = settings;
             hasExplicitSettings = true;
@@ -94,16 +542,61 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void SetBlend(BlendSettings settings)
         {
-            KillActiveTween(false);
+            tweenController.Kill(false, PromoteExplicitSettings);
             explicitSettings ??= new LiteEffectSettings();
             explicitSettings.Blend = settings;
             hasExplicitSettings = true;
             Refresh();
         }
 
+        public void SetOutline(OutlineSettings settings)
+        {
+            tweenController.Kill(false, PromoteExplicitSettings);
+            explicitSettings ??= new LiteEffectSettings();
+            explicitSettings.Outline = settings;
+            hasExplicitSettings = true;
+            Refresh();
+        }
+
+        public void SetGlow(GlowSettings settings)
+        {
+            tweenController.Kill(false, PromoteExplicitSettings);
+            explicitSettings ??= new LiteEffectSettings();
+            explicitSettings.Glow = settings;
+            hasExplicitSettings = true;
+            Refresh();
+        }
+
+        public void SetBlur(BlurSettings settings)
+        {
+            tweenController.Kill(false, PromoteExplicitSettings);
+            explicitSettings ??= new LiteEffectSettings();
+            explicitSettings.Blur = settings;
+            hasExplicitSettings = true;
+            Refresh();
+        }
+
+        public void SetDissolve(DissolveSettings settings)
+        {
+            tweenController.Kill(false, PromoteExplicitSettings);
+            explicitSettings ??= new LiteEffectSettings();
+            explicitSettings.Dissolve = settings;
+            hasExplicitSettings = true;
+            Refresh();
+        }
+
+        public void SetGlitch(GlitchSettings settings)
+        {
+            tweenController.Kill(false, PromoteExplicitSettings);
+            explicitSettings ??= new LiteEffectSettings();
+            explicitSettings.Glitch = settings;
+            hasExplicitSettings = true;
+            Refresh();
+        }
+
         public void ClearExplicit()
         {
-            KillActiveTween(false);
+            tweenController.Kill(false, PromoteExplicitSettings);
             explicitSettings = new LiteEffectSettings();
             hasExplicitSettings = false;
             Refresh();
@@ -111,40 +604,12 @@ namespace Acfeel.UIToolkitLiteEffects
 
         internal void PlayTweenSequence(LiteEffectTweenSequenceDefinition sequence)
         {
-            if (sequence == null || !sequence.HasTweens)
-            {
-                return;
-            }
-
-            var compiled = CompileTweenSequence(sequence);
-            if (compiled == null)
-            {
-                return;
-            }
-
-            KillActiveTween(false);
-            activeTweenSequence = compiled;
-            tweenStartTime = Time.realtimeSinceStartupAsDouble;
-            EnsureTweenScheduler();
-            UpdateTween();
+            tweenController.PlaySequence(sequence, CaptureTweenStartSettings());
         }
 
         internal void KillActiveTween(bool keepCurrentValue)
         {
-            if (hasTweenSettings && keepCurrentValue)
-            {
-                explicitSettings = LiteEffectTweenSettingsUtility.Clone(tweenSettings);
-                hasExplicitSettings = true;
-            }
-
-            hasTweenSettings = false;
-            tweenSettings = new LiteEffectSettings();
-            activeTweenSequence = null;
-
-            if (tweenScheduledItem != null)
-            {
-                tweenScheduledItem.Pause();
-            }
+            tweenController.Kill(keepCurrentValue, PromoteExplicitSettings);
         }
 
         public void Refresh()
@@ -167,20 +632,15 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             disposed = true;
-            KillActiveTween(false);
+            tweenController.Dispose();
             element.generateVisualContent -= OnGenerateVisualContent;
             element.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             element.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             element.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             element.UnregisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             RestoreBackgroundImageTint();
-            ReleaseProcessedTexture();
-
-            if (effectMaterial != null)
-            {
-                UnityEngine.Object.DestroyImmediate(effectMaterial);
-                effectMaterial = null;
-            }
+            outlineOverlayController.Dispose();
+            renderTextureController.Dispose();
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
@@ -190,8 +650,9 @@ namespace Acfeel.UIToolkitLiteEffects
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            KillActiveTween(true);
-            ReleaseProcessedTexture();
+            tweenController.Kill(true, PromoteExplicitSettings);
+            outlineOverlayController.Detach();
+            renderTextureController.Release();
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -227,6 +688,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 UpdateVisualState();
             }
 
+            var processedTexture = renderTextureController.ProcessedTexture;
             if (processedTexture == null)
             {
                 return;
@@ -240,38 +702,33 @@ namespace Acfeel.UIToolkitLiteEffects
 
             var mesh = context.Allocate(4, 6, processedTexture);
             var vertices = new Vertex[4];
-            vertices[0] = CreateVertex(new Vector2(rect.xMin, rect.yMin), new Vector2(0f, 1f));
-            vertices[1] = CreateVertex(new Vector2(rect.xMax, rect.yMin), new Vector2(1f, 1f));
-            vertices[2] = CreateVertex(new Vector2(rect.xMax, rect.yMax), new Vector2(1f, 0f));
-            vertices[3] = CreateVertex(new Vector2(rect.xMin, rect.yMax), new Vector2(0f, 0f));
+            vertices[0] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMin, rect.yMin), new Vector2(0f, 1f));
+            vertices[1] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMax, rect.yMin), new Vector2(1f, 1f));
+            vertices[2] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMax, rect.yMax), new Vector2(1f, 0f));
+            vertices[3] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMin, rect.yMax), new Vector2(0f, 0f));
 
             mesh.SetAllVertices(vertices);
             mesh.SetAllIndices(new ushort[] { 0, 1, 2, 2, 3, 0 });
-        }
 
-        private static Vertex CreateVertex(Vector2 position, Vector2 uv)
-        {
-            return new Vertex
+            if (resolvedSettings.RequiresRealtimeRefresh)
             {
-                position = new Vector3(position.x, position.y, Vertex.nearZ),
-                uv = uv,
-                tint = Color.white
-            };
+                element.MarkDirtyRepaint();
+            }
         }
 
         private ResolvedLiteEffectSettings GetResolvedSettings()
         {
-            var activeSettings = hasTweenSettings
-                ? tweenSettings
+            var activeSettings = tweenController.HasTweenSettings
+                ? tweenController.TweenSettings
                 : hasExplicitSettings ? explicitSettings : null;
             return LiteEffectSettingsResolver.Resolve(activeSettings, ussSettings);
         }
 
         private LiteEffectSettings CaptureTweenStartSettings()
         {
-            if (hasTweenSettings)
+            if (tweenController.HasTweenSettings)
             {
-                return LiteEffectTweenSettingsUtility.Clone(tweenSettings);
+                return LiteEffectTweenSettingsUtility.Clone(tweenController.TweenSettings);
             }
 
             if (hasExplicitSettings)
@@ -290,13 +747,13 @@ namespace Acfeel.UIToolkitLiteEffects
             if (!resolvedSettings.HasAnyEffect)
             {
                 RestoreBackgroundImageTint();
-                ReleaseProcessedTexture();
+                outlineOverlayController.Hide();
+                renderTextureController.Release();
                 return;
             }
 
-            EnsureMaterial();
-
             var sourceTexture = ExtractTexture(element.resolvedStyle.backgroundImage);
+            var backgroundColor = sourceTexture != null ? Color.white : element.resolvedStyle.backgroundColor;
             if (sourceTexture != null)
             {
                 SuppressBackgroundImageTint();
@@ -306,113 +763,19 @@ namespace Acfeel.UIToolkitLiteEffects
                 RestoreBackgroundImageTint();
             }
 
-            var targetSize = GetTargetTextureSize(sourceTexture);
-            if (targetSize.x <= 0 || targetSize.y <= 0)
+            if (!renderTextureController.Update(element.contentRect, sourceTexture, backgroundColor, resolvedSettings))
             {
-                ReleaseProcessedTexture();
+                outlineOverlayController.Hide();
                 return;
             }
 
-            EnsureProcessedTexture(targetSize);
-            RenderEffectTexture(sourceTexture, resolvedSettings);
-        }
-
-        private void EnsureMaterial()
-        {
-            if (effectMaterial != null)
-            {
-                return;
-            }
-
-            var shader = Resources.Load<Shader>("AcfeelUIToolkitLiteEffects");
-            if (shader == null)
-            {
-                shader = Shader.Find("Hidden/Acfeel/UIToolkitLiteEffects");
-            }
-
-            if (shader == null)
-            {
-                throw new InvalidOperationException("UIToolkitLiteEffects shader was not found.");
-            }
-
-            effectMaterial = new Material(shader)
-            {
-                hideFlags = HideFlags.HideAndDontSave
-            };
-        }
-
-        private void EnsureProcessedTexture(Vector2Int targetSize)
-        {
-            if (processedTexture != null && processedTextureSize == targetSize)
-            {
-                return;
-            }
-
-            ReleaseProcessedTexture();
-
-            processedTexture = new RenderTexture(targetSize.x, targetSize.y, 0, RenderTextureFormat.ARGB32)
-            {
-                name = "UIToolkitLiteEffects_RT",
-                hideFlags = HideFlags.HideAndDontSave,
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear
-            };
-            processedTexture.Create();
-            processedTextureSize = targetSize;
-        }
-
-        private void ReleaseProcessedTexture()
-        {
-            processedTextureSize = default;
-
-            if (processedTexture == null)
-            {
-                return;
-            }
-
-            processedTexture.Release();
-            UnityEngine.Object.DestroyImmediate(processedTexture);
-            processedTexture = null;
-        }
-
-        private void RenderEffectTexture(Texture sourceTexture, ResolvedLiteEffectSettings resolvedSettings)
-        {
-            var inputTexture = sourceTexture != null ? sourceTexture : Texture2D.whiteTexture;
-            var backgroundColor = sourceTexture != null ? Color.white : element.resolvedStyle.backgroundColor;
-            var gradientRadians = resolvedSettings.Gradient.Angle * Mathf.Deg2Rad;
-
-            effectMaterial.SetTexture(MainTexId, inputTexture);
-            effectMaterial.SetColor(BaseColorId, backgroundColor);
-            effectMaterial.SetFloat(BrightnessId, resolvedSettings.ColorAdjust.Brightness);
-            effectMaterial.SetFloat(ContrastId, resolvedSettings.ColorAdjust.Contrast);
-            effectMaterial.SetFloat(SaturationId, resolvedSettings.ColorAdjust.Saturation);
-            effectMaterial.SetColor(MultiplyId, resolvedSettings.ColorAdjust.Multiply);
-            effectMaterial.SetColor(AddId, resolvedSettings.ColorAdjust.Add);
-            effectMaterial.SetFloat(GradientEnabledId, resolvedSettings.Gradient.Enabled ? 1f : 0f);
-            effectMaterial.SetColor(GradientFromId, resolvedSettings.Gradient.From);
-            effectMaterial.SetColor(GradientToId, resolvedSettings.Gradient.To);
-            effectMaterial.SetVector(GradientDirectionId, new Vector4(Mathf.Cos(gradientRadians), Mathf.Sin(gradientRadians), 0f, 0f));
-            effectMaterial.SetFloat(GradientModeId, (float)resolvedSettings.Gradient.Mode);
-            effectMaterial.SetFloat(BlendEnabledId, resolvedSettings.Blend.Enabled ? 1f : 0f);
-            effectMaterial.SetFloat(BlendModeId, (float)resolvedSettings.Blend.Mode);
-            effectMaterial.SetFloat(BlendStrengthId, resolvedSettings.Blend.Strength);
-
-            Graphics.Blit(inputTexture, processedTexture, effectMaterial);
-        }
-
-        private Vector2Int GetTargetTextureSize(Texture sourceTexture)
-        {
-            if (sourceTexture != null)
-            {
-                return new Vector2Int(
-                    Mathf.Clamp(sourceTexture.width, 1, 2048),
-                    Mathf.Clamp(sourceTexture.height, 1, 2048));
-            }
-
-            var rect = element.contentRect;
-            return new Vector2Int(
-                Mathf.Clamp(Mathf.CeilToInt(rect.width), 1, 2048),
-                Mathf.Clamp(Mathf.CeilToInt(rect.height), 1, 2048));
+            outlineOverlayController.Update(
+                sourceTexture,
+                element.contentRect,
+                resolvedSettings.Outline,
+                element.resolvedStyle.opacity,
+                element.resolvedStyle.visibility,
+                element.resolvedStyle.display);
         }
 
         private void SuppressBackgroundImageTint()
@@ -463,103 +826,10 @@ namespace Acfeel.UIToolkitLiteEffects
             return null;
         }
 
-        private LiteEffectTweenRuntimeSequence CompileTweenSequence(LiteEffectTweenSequenceDefinition sequence)
+        private void PromoteExplicitSettings(LiteEffectSettings settings)
         {
-            var currentState = CaptureTweenStartSettings();
-            var runtimeGroups = new System.Collections.Generic.List<LiteEffectTweenRuntimeGroup>();
-
-            foreach (var group in sequence.Groups)
-            {
-                var runtimeGroup = new LiteEffectTweenRuntimeGroup
-                {
-                    BaseState = LiteEffectTweenSettingsUtility.Clone(currentState),
-                    EndState = LiteEffectTweenSettingsUtility.Clone(currentState)
-                };
-
-                var longestDuration = 0f;
-                foreach (var item in group.Items)
-                {
-                    if (item?.TargetSettings == null || !LiteEffectTweenSettingsUtility.HasAnyAssignedField(item.TargetSettings))
-                    {
-                        continue;
-                    }
-
-                    var startPartial = LiteEffectTweenSettingsUtility.ExtractMasked(currentState, item.TargetSettings);
-                    var targetState = LiteEffectTweenSettingsUtility.Merge(currentState, item.TargetSettings);
-                    var endPartial = LiteEffectTweenSettingsUtility.ExtractMasked(targetState, item.TargetSettings);
-
-                    runtimeGroup.Items.Add(new LiteEffectTweenRuntimeItem
-                    {
-                        FromValues = startPartial,
-                        ToValues = endPartial,
-                        Delay = Mathf.Max(0f, item.Delay),
-                        Duration = Mathf.Max(0f, item.Duration),
-                        Ease = item.Ease
-                    });
-
-                    runtimeGroup.EndState = LiteEffectTweenSettingsUtility.Merge(runtimeGroup.EndState, item.TargetSettings);
-                    longestDuration = Mathf.Max(longestDuration, Mathf.Max(0f, item.Delay) + Mathf.Max(0f, item.Duration));
-                }
-
-                if (runtimeGroup.Items.Count == 0)
-                {
-                    continue;
-                }
-
-                runtimeGroup.TotalDuration = longestDuration;
-                runtimeGroups.Add(runtimeGroup);
-                currentState = LiteEffectTweenSettingsUtility.Clone(runtimeGroup.EndState);
-            }
-
-            if (runtimeGroups.Count == 0)
-            {
-                return null;
-            }
-
-            return new LiteEffectTweenRuntimeSequence(runtimeGroups, sequence.OnComplete);
-        }
-
-        private void EnsureTweenScheduler()
-        {
-            tweenScheduledItem ??= element.schedule.Execute(UpdateTween).Every(16);
-            tweenScheduledItem.Resume();
-        }
-
-        private void UpdateTween()
-        {
-            if (disposed || activeTweenSequence == null)
-            {
-                KillActiveTween(false);
-                return;
-            }
-
-            if (element.panel == null)
-            {
-                KillActiveTween(true);
-                return;
-            }
-
-            if (!activeTweenSequence.TryEvaluate((float)(Time.realtimeSinceStartupAsDouble - tweenStartTime), out var frame, out var completed)
-                || frame == null)
-            {
-                KillActiveTween(false);
-                return;
-            }
-
-            hasTweenSettings = true;
-            tweenSettings = LiteEffectTweenSettingsUtility.Clone(frame);
-            Refresh();
-
-            if (!completed)
-            {
-                return;
-            }
-
-            explicitSettings = LiteEffectTweenSettingsUtility.Clone(frame);
+            explicitSettings = settings ?? new LiteEffectSettings();
             hasExplicitSettings = true;
-            var callback = activeTweenSequence.OnComplete;
-            KillActiveTween(false);
-            callback?.Invoke();
         }
     }
 }
