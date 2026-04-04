@@ -2,6 +2,12 @@
 
 Unity UI Toolkit 向けの軽量ビジュアルエフェクトパッケージです。`VisualElement` や `backgroundImage` を持つ要素に対して、色調補正、グラデーション、簡易ブレンド、疑似アウトライン、グロー、疑似ブラー、ディゾルブ、グリッチをコードまたは USS カスタムプロパティから適用できます。
 
+## 注意
+
+`UnityEngine.UIElements.Image` 要素には対応していません。
+
+正式なサポート対象は背景描画ベースの要素のみです。画像にエフェクトを適用したい場合は、`backgroundImage` を持つ `VisualElement` を使用してください。
+
 ## 特徴
 
 - `VisualElement` 拡張メソッドでそのまま使えます
