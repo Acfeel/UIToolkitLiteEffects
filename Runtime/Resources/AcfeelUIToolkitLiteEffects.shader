@@ -93,6 +93,21 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 return lerp(luminance.xxx, color, saturation);
             }
 
+            float GetOutlineThicknessPixels(float normalizedThickness)
+            {
+                return saturate(normalizedThickness) * 4.0;
+            }
+
+            float GetGlowSpreadPixels(float normalizedSpread)
+            {
+                return saturate(normalizedSpread) * 4.0;
+            }
+
+            float GetBlurRadiusPixels(float normalizedRadius)
+            {
+                return saturate(normalizedRadius) * 3.0;
+            }
+
             float4 ApplyMode(float4 source, float4 target, float mode, float strength)
             {
                 if (mode < 0.5)
@@ -158,7 +173,8 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
 
             float GetOutlineMask(float2 uv, float sourceAlpha, float thickness)
             {
-                float2 texel = _MainTexTexelSize.xy * max(thickness, 0.0001);
+                float thicknessPixels = GetOutlineThicknessPixels(thickness);
+                float2 texel = _MainTexTexelSize.xy * max(thicknessPixels, 0.0001);
                 float neighborAlpha = 0.0;
                 neighborAlpha = max(neighborAlpha, GetNeighborAlpha(uv, float2(texel.x, 0.0)));
                 neighborAlpha = max(neighborAlpha, GetNeighborAlpha(uv, float2(-texel.x, 0.0)));
@@ -174,7 +190,8 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
 
             float GetGlowOutlineMask(float2 uv, float sourceSilhouetteAlpha, float thickness)
             {
-                float2 texel = _MainTexTexelSize.xy * max(thickness, 0.0001);
+                float thicknessPixels = max(thickness, 0.0001);
+                float2 texel = _MainTexTexelSize.xy * thicknessPixels;
                 float neighborAlpha = 0.0;
                 neighborAlpha = max(neighborAlpha, GetNeighborSilhouetteAlpha(uv, float2(texel.x, 0.0)));
                 neighborAlpha = max(neighborAlpha, GetNeighborSilhouetteAlpha(uv, float2(-texel.x, 0.0)));
@@ -190,15 +207,17 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
 
             float GetGlowMask(float2 uv, float sourceAlpha, float spread)
             {
+                float spreadPixels = GetGlowSpreadPixels(spread);
                 float sourceSilhouetteAlpha = step(0.7, sourceAlpha);
-                float innerMask = GetGlowOutlineMask(uv, sourceSilhouetteAlpha, max(spread * 0.9, 0.0001));
-                float outerMask = GetGlowOutlineMask(uv, sourceSilhouetteAlpha, max(spread * 1.8, 0.0001));
+                float innerMask = GetGlowOutlineMask(uv, sourceSilhouetteAlpha, max(spreadPixels * 0.9, 0.0001));
+                float outerMask = GetGlowOutlineMask(uv, sourceSilhouetteAlpha, max(spreadPixels * 1.8, 0.0001));
                 return saturate(innerMask * 0.7 + outerMask * 0.45);
             }
 
             float3 SampleBlur(float2 uv, float radius)
             {
-                float2 texel = _MainTexTexelSize.xy * max(radius, 0.0001);
+                float radiusPixels = GetBlurRadiusPixels(radius);
+                float2 texel = _MainTexTexelSize.xy * max(radiusPixels, 0.0001);
                 float4 center = SampleSource(uv);
                 float4 right = SampleSource(uv + float2(texel.x, 0.0));
                 float4 left = SampleSource(uv + float2(-texel.x, 0.0));

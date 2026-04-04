@@ -285,13 +285,19 @@ v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` �
 - `Multiply`: `Color.white` がニュートラルです
 - `Add`: `Color.clear` がニュートラルです
 - `Blend Strength`: `0..1`。`0` で無効、`1` で最大です
-- `Outline Thickness`: `0..1`。小さな値で使う前提の疑似輪郭です
-- `Glow Spread`: `0..1`。広げ過ぎず、輪郭共有の軽量発光です
-- `Blur Radius`: `0..1`。少数サンプルの疑似ブラーなので大きい値には向きません
+- `Outline Thickness`: `0..1`。`0` で無効、`1` で最も太くなります
+- `Glow Spread`: `0..1`。`0` で無効、`1` で最も広がります
+- `Blur Radius`: `0..1`。`0` で無効、`1` で最も強く広がります
 - `Dissolve Amount`: `0..1`。`0` で表示、`1` に近いほど消えます
 - `Dissolve Edge Width`: `0..1`。消え際のなめらかさを調整します
 - `Dissolve EdgeColor`: `Color.clear` なら縁色を出さず、そのまま透明に抜けます
 - `Glitch Intensity`: `0..1`。低い値で短い揺れを足す用途を想定しています
+
+見た目確認用の目安としては次のくらいから始めると調整しやすいです。
+
+- `Outline Thickness`: `0.25`, `0.5`, `0.75`, `1.0`
+- `Glow Spread`: `0.25`, `0.5`, `0.75`, `1.0`
+- `Blur Radius`: `0.2`, `0.5`, `0.8`, `1.0`
 
 ## AI / コード生成向けメモ
 

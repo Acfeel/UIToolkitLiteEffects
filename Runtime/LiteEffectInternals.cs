@@ -122,6 +122,22 @@ namespace Acfeel.UIToolkitLiteEffects
         }
     }
 
+    internal static class LiteEffectNormalizedRange
+    {
+        public const float OutlineThicknessMaxPixels = 4f;
+        public const float GlowSpreadMaxPixels = 4f;
+
+        public static float ToOutlineThicknessPixels(float normalizedThickness)
+        {
+            return Mathf.Clamp01(normalizedThickness) * OutlineThicknessMaxPixels;
+        }
+
+        public static float ToGlowSpreadPixels(float normalizedSpread)
+        {
+            return Mathf.Clamp01(normalizedSpread) * GlowSpreadMaxPixels;
+        }
+    }
+
     internal sealed class LiteEffectRenderTextureController : IDisposable
     {
         private readonly Shader effectShader;
@@ -523,12 +539,13 @@ namespace Acfeel.UIToolkitLiteEffects
             outlineOverlayElement.style.backgroundImage = StyleKeyword.Null;
             outlineOverlayElement.style.backgroundColor = StyleKeyword.Null;
 
+            var outlineThicknessPixels = LiteEffectNormalizedRange.ToOutlineThicknessPixels(outline.Thickness);
             outlineOverlayColor = new Color(
                 outline.Color.r,
                 outline.Color.g,
                 outline.Color.b,
                 outline.Color.a * outline.Opacity * (activeOutlineRenderer.RequiresTexture ? 1f : dissolveFade));
-            outlineOverlayThickness = Mathf.Max(1f, outline.Thickness);
+            outlineOverlayThickness = outlineThicknessPixels;
             IsVisible = display != DisplayStyle.None;
 
             if (activeOutlineRenderer.RequiresTexture)
@@ -784,7 +801,8 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            var padding = Mathf.CeilToInt(Mathf.Max(2f, glow.Spread * 3f));
+            var glowSpreadPixels = LiteEffectNormalizedRange.ToGlowSpreadPixels(glow.Spread);
+            var padding = Mathf.CeilToInt(Mathf.Max(2f, glowSpreadPixels * 3f));
             var targetSize = new Vector2Int(
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.width) + padding * 2, 1, 2048),
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.height) + padding * 2, 1, 2048));
@@ -1010,7 +1028,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public int GetPadding(ResolvedOutlineSettings outline)
         {
-            return Mathf.CeilToInt(Mathf.Max(1f, outline.Thickness));
+            return Mathf.CeilToInt(Mathf.Max(1f, LiteEffectNormalizedRange.ToOutlineThicknessPixels(outline.Thickness)));
         }
 
         public void PrepareTexture(
@@ -1031,7 +1049,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            var t = Mathf.Max(1f, thickness);
+            var t = thickness;
             var inner = new Rect(t, t, rect.width - t * 2f, rect.height - t * 2f);
             if (inner.width <= 0f || inner.height <= 0f)
             {
@@ -1083,7 +1101,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public int GetPadding(ResolvedOutlineSettings outline)
         {
-            return Mathf.CeilToInt(Mathf.Max(1f, outline.Thickness));
+            return Mathf.CeilToInt(Mathf.Max(1f, LiteEffectNormalizedRange.ToOutlineThicknessPixels(outline.Thickness)));
         }
 
         public void PrepareTexture(
@@ -1110,7 +1128,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
             outlineMaterial.SetTexture(MainTexId, sourceTexture);
             outlineMaterial.SetColor(OutlineColorId, outline.Color);
-            outlineMaterial.SetFloat(OutlineThicknessId, outline.Thickness);
+            outlineMaterial.SetFloat(OutlineThicknessId, LiteEffectNormalizedRange.ToOutlineThicknessPixels(outline.Thickness));
             outlineMaterial.SetFloat(OutlineOpacityId, outline.Opacity);
             outlineMaterial.SetFloat(OutlineSampleQualityId, outline.Quality == LiteEffectOutlineQuality.Low ? 0f : 1f);
             outlineMaterial.SetVector(TexelSizeId, new Vector4(1f / targetSize.x, 1f / targetSize.y, targetSize.x, targetSize.y));

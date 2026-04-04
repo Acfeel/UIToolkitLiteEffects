@@ -98,6 +98,11 @@ Shader "Hidden/Acfeel/UIToolkitLiteGlow"
                 return glowAlpha * SampleContentDissolveMask(uv);
             }
 
+            float GetGlowSpreadPixels(float normalizedSpread)
+            {
+                return saturate(normalizedSpread) * 4.0;
+            }
+
             float GetOutlineMask(float2 uv, float thickness)
             {
                 float2 texel = _MainTexTexelSize.xy * max(thickness, 0.0001);
@@ -117,7 +122,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteGlow"
 
             float4 frag(v2f i) : SV_Target
             {
-                float spread = max(_GlowSpread, 0.0001);
+                float spread = max(GetGlowSpreadPixels(_GlowSpread), 0.0001);
                 float strength = saturate(_GlowStrength);
                 float inner = GetOutlineMask(i.uv, spread * 0.85);
                 float middle = GetOutlineMask(i.uv, spread * 1.7);
