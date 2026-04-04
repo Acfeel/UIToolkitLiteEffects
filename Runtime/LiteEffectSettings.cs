@@ -362,7 +362,7 @@ namespace Acfeel.UIToolkitLiteEffects
         private static ResolvedOutlineSettings ResolveOutline(OutlineSettings explicitSettings, OutlineSettings ussSettings)
         {
             var color = explicitSettings?.Color ?? ussSettings?.Color ?? Color.black;
-            var thickness = Mathf.Clamp(explicitSettings?.Thickness ?? ussSettings?.Thickness ?? 0f, 0f, 4f);
+            var thickness = Mathf.Clamp01(explicitSettings?.Thickness ?? ussSettings?.Thickness ?? 0f);
             var opacity = Mathf.Clamp01(explicitSettings?.Opacity ?? ussSettings?.Opacity ?? 0f);
             var quality = explicitSettings?.Quality ?? ussSettings?.Quality ?? LiteEffectOutlineQuality.Normal;
             var enabled = explicitSettings?.Enabled
@@ -376,7 +376,7 @@ namespace Acfeel.UIToolkitLiteEffects
         {
             var color = explicitSettings?.Color ?? ussSettings?.Color ?? Color.white;
             var strength = Mathf.Clamp01(explicitSettings?.Strength ?? ussSettings?.Strength ?? 0f);
-            var spread = Mathf.Clamp(explicitSettings?.Spread ?? ussSettings?.Spread ?? 0f, 0f, 4f);
+            var spread = Mathf.Clamp01(explicitSettings?.Spread ?? ussSettings?.Spread ?? 0f);
             var enabled = explicitSettings?.Enabled
                 ?? ussSettings?.Enabled
                 ?? (strength > 0.0001f && spread > 0.0001f);
@@ -386,7 +386,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         private static ResolvedBlurSettings ResolveBlur(BlurSettings explicitSettings, BlurSettings ussSettings)
         {
-            var radius = Mathf.Clamp(explicitSettings?.Radius ?? ussSettings?.Radius ?? 0f, 0f, 3f);
+            var radius = Mathf.Clamp01(explicitSettings?.Radius ?? ussSettings?.Radius ?? 0f);
             var strength = Mathf.Clamp01(explicitSettings?.Strength ?? ussSettings?.Strength ?? 0f);
             var enabled = explicitSettings?.Enabled
                 ?? ussSettings?.Enabled

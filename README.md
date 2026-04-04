@@ -60,11 +60,11 @@ icon.SetLiteEffect(new LiteEffectSettings
     {
         Color = new Color(0.35f, 0.8f, 1f, 1f),
         Strength = 0.2f,
-        Spread = 1.1f
+        Spread = 0.9f
     },
     Blur = new BlurSettings
     {
-        Radius = 1.0f,
+        Radius = 0.8f,
         Strength = 0.25f
     },
     Dissolve = new DissolveSettings
@@ -107,12 +107,12 @@ icon.SetOutline(new OutlineSettings
 icon.SetGlow(new GlowSettings
 {
     Strength = 0.35f,
-    Spread = 1.2f
+    Spread = 0.9f
 });
 
 icon.SetBlur(new BlurSettings
 {
-    Radius = 1.25f,
+    Radius = 0.85f,
     Strength = 0.3f
 });
 
@@ -169,7 +169,7 @@ icon.SetLiteEffect(new LiteEffectSettings());
     --uitoolkitlitefx-outline-opacity: 0.6;
     --uitoolkitlitefx-glow-color: rgba(90, 200, 255, 1);
     --uitoolkitlitefx-glow-strength: 0.22;
-    --uitoolkitlitefx-glow-spread: 1.2;
+    --uitoolkitlitefx-glow-spread: 0.9;
     --uitoolkitlitefx-blur-radius: 1.0;
     --uitoolkitlitefx-blur-strength: 0.25;
     --uitoolkitlitefx-dissolve-amount: 0.15;
@@ -184,7 +184,7 @@ icon.SetLiteEffect(new LiteEffectSettings());
 
 ## 値の目安
 
-このパッケージは、数値を見ただけで挙動を予測しやすいように、公開レンジを `0..1` に揃えています。
+このパッケージは、数値を見ただけで挙動を予測しやすいように、基本の公開レンジを `0..1` に揃えています。一部の角度や補助値は別レンジです。
 
 - `Brightness`: `0..1`。`0.5` がニュートラルで、`0` で暗く、`1` で明るくなります
 - `Contrast`: `0..1`。`0.5` がニュートラルで、`0` で弱く、`1` で強くなります
@@ -192,10 +192,11 @@ icon.SetLiteEffect(new LiteEffectSettings());
 - `Multiply`: `Color.white` がニュートラルです
 - `Add`: `Color.clear` がニュートラルです
 - `Blend Strength`: `0..1`。`0` で無効、`1` で最大です
-- `Outline Thickness`: `0..4`。小さな値で使う前提の疑似輪郭です
-- `Glow Spread`: `0..4`。広げ過ぎず、輪郭共有の軽量発光です
-- `Blur Radius`: `0..3`。少数サンプルの疑似ブラーなので大きい値には向きません
+- `Outline Thickness`: `0..1`。小さな値で使う前提の疑似輪郭です
+- `Glow Spread`: `0..1`。広げ過ぎず、輪郭共有の軽量発光です
+- `Blur Radius`: `0..1`。少数サンプルの疑似ブラーなので大きい値には向きません
 - `Dissolve Amount`: `0..1`。`0` で表示、`1` に近いほど消えます
+- `Dissolve Edge Width`: `0..1`。消え際のなめらかさを調整します
 - `Dissolve EdgeColor`: `Color.clear` なら縁色を出さず、そのまま透明に抜けます
 - `Glitch Intensity`: `0..1`。低い値で短い揺れを足す用途を想定しています
 
