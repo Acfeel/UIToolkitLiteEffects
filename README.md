@@ -9,7 +9,7 @@ Unity UI Toolkit 向けの軽量ビジュアルエフェクトパッケージで
 - 必要になったら `LiteEffectSettings` で一括指定に移行できます
 - USS カスタムプロパティだけで制御する使い方にも対応しています
 - Tween API で軽いアニメーションをチェーンできます
-- 値の公開レンジは基本 `0..1` に寄せてあり、AI からも扱いやすい設計です
+- 値の公開レンジは基本 `0..1` に寄せてあり、数値の意味を把握しやすい設計です
 
 ## 導入方法
 
@@ -240,7 +240,7 @@ icon.EnableLiteEffectFromUss();
 }
 ```
 
-`SetLiteEffect(new LiteEffectSettings())` でも同様に動作しますが、利用側の AI には `EnableLiteEffectFromUss()` のほうが意図を伝えやすいです。
+`SetLiteEffect(new LiteEffectSettings())` でも同様に動作しますが、USS だけで制御する場合は `EnableLiteEffectFromUss()` のほうが用途に合っています。
 
 ## Tween
 
@@ -288,13 +288,12 @@ v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` �
 - `Glow Spread`: `0.25`, `0.5`, `0.75`, `1.0`
 - `Blur Radius`: `0.2`, `0.5`, `0.8`, `1.0`
 
-## AI / コード生成向けメモ
+## 使い分けのヒント
 
-- 利用側の AI には、まず単体 API を使わせると意図がぶれにくくなります
-- 複数効果をまとめて管理したい場面だけ `SetLiteEffect` に移るのがおすすめです
+- まずは 1 つの効果だけ試したい場合は、`SetGlow` などの単体 API がわかりやすく扱えます
+- 複数効果をまとめて管理したい場合は、`SetLiteEffect` にまとめると見通しがよくなります
 - 各エフェクトは `Enabled` を省略した場合でも、値が入ると自動で有効化されます
-- 自動有効化を前提としているため、AI が差分更新する場合は「どの値を追加したか」を意識すると挙動を説明しやすくなります
-- USS だけで制御したい場合は `EnableLiteEffectFromUss()` を使うと意図が明確です
+- USS だけで制御したい場合は、`EnableLiteEffectFromUss()` を呼んでからカスタムプロパティを指定します
 
 ## 副作用と既知の挙動
 
