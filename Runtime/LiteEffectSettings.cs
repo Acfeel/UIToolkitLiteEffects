@@ -85,7 +85,8 @@ namespace Acfeel.UIToolkitLiteEffects
 
     public enum LiteEffectBlendMode
     {
-        Mix = 0,
+        Replace = 0,
+        Mix = Replace,
         Multiply = 1,
         Additive = 2
     }
@@ -313,7 +314,7 @@ namespace Acfeel.UIToolkitLiteEffects
             var from = explicitSettings?.From ?? ussSettings?.From ?? Color.clear;
             var to = explicitSettings?.To ?? ussSettings?.To ?? Color.clear;
             var angle = explicitSettings?.Angle ?? ussSettings?.Angle ?? 0f;
-            var mode = explicitSettings?.Mode ?? ussSettings?.Mode ?? LiteEffectBlendMode.Mix;
+            var mode = explicitSettings?.Mode ?? ussSettings?.Mode ?? LiteEffectBlendMode.Replace;
             var strength = Mathf.Clamp01(explicitSettings?.Strength ?? ussSettings?.Strength ?? 1f);
             var hasAssignedFields = HasAnyAssignedField(explicitSettings) || HasAnyAssignedField(ussSettings);
             var hasGradientColors =

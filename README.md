@@ -53,13 +53,14 @@ icon.SetColorAdjust(new ColorAdjustSettings
 
 ### Gradient
 
+`Mode` を省略した場合は `LiteEffectBlendMode.Replace` が使われ、グラデーション色でそのまま置き換えます。
+
 ```csharp
 icon.SetGradient(new GradientSettings
 {
     From = Color.cyan,
     To = Color.blue,
-    Mode = LiteEffectBlendMode.Multiply,
-    Strength = 0.35f,
+    Strength = 1f,
     Angle = 90f
 });
 ```
@@ -159,8 +160,7 @@ icon.SetLiteEffect(new LiteEffectSettings
     {
         From = new Color(1f, 0.4f, 0.2f, 0.55f),
         To = new Color(1f, 0.9f, 0.2f, 0.15f),
-        Mode = LiteEffectBlendMode.Multiply,
-        Strength = 0.35f,
+        Strength = 1f,
         Angle = 35f
     },
     Outline = new OutlineSettings
@@ -220,8 +220,8 @@ icon.EnableLiteEffectFromUss();
     --uitoolkitlitefx-gradient-from: rgba(255, 128, 64, 0.55);
     --uitoolkitlitefx-gradient-to: rgba(255, 255, 64, 0.1);
     --uitoolkitlitefx-gradient-angle: 45;
-    --uitoolkitlitefx-gradient-mode: multiply;
-    --uitoolkitlitefx-gradient-strength: 0.3;
+    --uitoolkitlitefx-gradient-mode: replace;
+    --uitoolkitlitefx-gradient-strength: 1;
     --uitoolkitlitefx-outline-color: rgba(255, 255, 255, 1);
     --uitoolkitlitefx-outline-thickness: 1.0;
     --uitoolkitlitefx-outline-opacity: 0.6;
@@ -273,6 +273,7 @@ v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` �
 - `Saturation`: `0..1`。`0.5` がニュートラルで、`0` で無彩色、`1` で彩度強めになります
 - `Multiply`: `Color.white` がニュートラルです
 - `Add`: `Color.clear` がニュートラルです
+- `Gradient Mode`: 省略時は `replace` で、グラデーション色に置き換えます
 - `Gradient Strength`: `0..1`。`0` で無効、`1` で最大です
 - `Outline Thickness`: `0..1`。`0` で無効、`1` で最も太くなります
 - `Glow Spread`: `0..1`。`0` で無効、`1` で最も広がります
