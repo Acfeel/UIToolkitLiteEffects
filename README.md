@@ -1,28 +1,154 @@
 # UIToolkitLiteEffects
 
-Unity UI Toolkit 向けの軽量ビジュアルエフェクトパッケージです。`VisualElement` や `backgroundImage` を持つ要素に対して、色調補正、グラデーション、簡易ブレンドに加えて、疑似アウトライン、グロー風、疑似ブラー、ディゾルブ、ノイズ/グリッチをコード主導で適用できます。
+Unity UI Toolkit 向けの軽量ビジュアルエフェクトパッケージです。`VisualElement` や `backgroundImage` を持つ要素に対して、色調補正、グラデーション、簡易ブレンド、疑似アウトライン、グロー、疑似ブラー、ディゾルブ、グリッチをコードまたは USS カスタムプロパティから適用できます。
 
 ## 特徴
 
-- `VisualElement` 拡張メソッドで即座に適用できる
-- UI Toolkit の `backgroundImage` にも対応
-- USS カスタムプロパティを併用できる
-- 内部ではカスタムシェーダーを使ってエフェクト済みテクスチャを生成する
-- AI から扱いやすいフラットな API
-- `AnimateColorAdjust` `AnimateGradient` `AnimateLiteEffect` のチェーン式 Tween に対応
-- 追加エフェクトも 1 パスの近似表現を優先し、軽さを重視している
+- `VisualElement` 拡張メソッドでそのまま使えます
+- 各エフェクトを単体で適用できます
+- 必要になったら `LiteEffectSettings` で一括指定に移行できます
+- USS カスタムプロパティだけで制御する使い方にも対応しています
+- Tween API で軽いアニメーションをチェーンできます
+- 値の公開レンジは基本 `0..1` に寄せてあり、AI からも扱いやすい設計です
 
 ## 導入方法
 
-1. Unity の `Window > Package Manager` を開く
-2. `Install package from git URL...` を選ぶ
-3. 次の URL を貼り付ける
+1. Unity の `Window > Package Manager` を開きます
+2. `Install package from git URL...` を選びます
+3. 次の URL を貼り付けます
 
 ```text
 https://github.com/acfeel/UIToolkitLiteEffects.git
 ```
 
-## 使い方
+## 最初の使い方
+
+```csharp
+using Acfeel.UIToolkitLiteEffects;
+using UnityEngine.UIElements;
+
+var icon = root.Q<VisualElement>("Icon");
+
+icon.SetGlow(new GlowSettings
+{
+    Strength = 0.25f,
+    Spread = 0.85f
+});
+```
+
+利用側の AI には、まず `SetGlow` のような単体 API を使わせるのが最もわかりやすいです。
+
+## エフェクト単体で使う
+
+`SetColorAdjust` `SetGradient` `SetBlend` `SetOutline` `SetGlow` `SetBlur` `SetDissolve` `SetGlitch` を使うと、必要なエフェクトだけを個別に指定できます。
+
+### ColorAdjust
+
+```csharp
+icon.SetColorAdjust(new ColorAdjustSettings
+{
+    Brightness = 0.55f,
+    Contrast = 0.6f,
+    Saturation = 0.62f
+});
+```
+
+### Gradient
+
+```csharp
+icon.SetGradient(new GradientSettings
+{
+    From = Color.cyan,
+    To = Color.blue,
+    Angle = 90f
+});
+```
+
+### Blend
+
+```csharp
+icon.SetBlend(new BlendSettings
+{
+    Mode = LiteEffectBlendMode.Multiply,
+    Strength = 0.35f
+});
+```
+
+### Outline
+
+```csharp
+icon.SetOutline(new OutlineSettings
+{
+    Color = Color.white,
+    Thickness = 1.0f,
+    Opacity = 0.6f
+});
+```
+
+### Glow
+
+```csharp
+icon.SetGlow(new GlowSettings
+{
+    Color = new Color(0.35f, 0.8f, 1f, 1f),
+    Strength = 0.2f,
+    Spread = 0.9f
+});
+```
+
+### Blur
+
+```csharp
+icon.SetBlur(new BlurSettings
+{
+    Radius = 0.8f,
+    Strength = 0.25f
+});
+```
+
+### Dissolve
+
+```csharp
+icon.SetDissolve(new DissolveSettings
+{
+    Amount = 0.4f,
+    EdgeWidth = 0.08f,
+    EdgeColor = Color.clear
+});
+```
+
+### Glitch
+
+```csharp
+icon.SetGlitch(new GlitchSettings
+{
+    Intensity = 0.3f,
+    Jitter = 0.45f,
+    ColorShift = 0.35f,
+    ScanlineStrength = 0.25f
+});
+```
+
+### 明示的に無効化したい場合
+
+各エフェクト設定には `Enabled` があります。値が入ると自動で有効化される設計ですが、明示的に切りたい場合は `Enabled = false` を指定できます。
+
+```csharp
+icon.SetGlow(new GlowSettings
+{
+    Enabled = false
+});
+```
+
+### クリア
+
+```csharp
+icon.ClearLiteEffect();
+```
+
+## 一括指定で使う
+
+複数エフェクトをまとめて設定したい場合は `SetLiteEffect` を使います。
 
 ```csharp
 using Acfeel.UIToolkitLiteEffects;
@@ -83,76 +209,21 @@ icon.SetLiteEffect(new LiteEffectSettings
 });
 ```
 
-部分更新もできます。
+使い分けの目安は次の通りです。
+
+- まずは 1 つの効果だけ付けたい: `SetGlow` などの単体 API
+- 複数の効果をまとめて管理したい: `SetLiteEffect`
+- すでに適用済みの要素を再描画したい: `LiteEffectHandle.Refresh()`
+
+## USS カスタムプロパティだけで使う
+
+USS カスタムプロパティだけで制御したい場合は、まず `EnableLiteEffectFromUss()` を呼びます。
 
 ```csharp
-icon.SetColorAdjust(new ColorAdjustSettings
-{
-    Multiply = new Color(0.8f, 1.0f, 1.2f, 1f)
-});
-
-icon.SetGradient(new GradientSettings
-{
-    From = Color.cyan,
-    To = Color.blue,
-    Angle = 90f
-});
-
-icon.SetOutline(new OutlineSettings
-{
-    Thickness = 1.5f,
-    Opacity = 0.75f
-});
-
-icon.SetGlow(new GlowSettings
-{
-    Strength = 0.35f,
-    Spread = 0.9f
-});
-
-icon.SetBlur(new BlurSettings
-{
-    Radius = 0.85f,
-    Strength = 0.3f
-});
-
-icon.SetDissolve(new DissolveSettings
-{
-    Amount = 0.4f
-});
-
-icon.SetGlitch(new GlitchSettings
-{
-    Intensity = 0.3f
-});
-
-icon.ClearLiteEffect();
+icon.EnableLiteEffectFromUss();
 ```
 
-チェーン式 Tween も利用できます。更新は `VisualElement.schedule` ベースで、`Coroutine` を使いません。作成した時点で自動再生されるので、`Play` は不要です。
-
-```csharp
-icon
-    .AnimateColorAdjust(new ColorAdjustSettings
-    {
-        Multiply = new Color(1.25f, 0.8f, 0.8f, 1f)
-    }, 0.2f)
-    .SetEase(LiteEffectEase.OutQuad)
-    .Append(icon.AnimateGradient(new GradientSettings
-    {
-        From = new Color(1f, 0.4f, 0.2f, 0.6f),
-        To = new Color(0.2f, 0.8f, 1f, 0.2f),
-        Angle = 120f
-    }, 0.45f).SetEase(LiteEffectEase.InOutSine))
-    .OnComplete(() => Debug.Log("LiteEffect tween completed."))
-;
-```
-
-USS カスタムプロパティだけを使いたい場合は、`--uitoolkitlitefx-*` の接頭辞で指定してください。空の設定でコントローラだけ有効化しても使えます。
-
-```csharp
-icon.SetLiteEffect(new LiteEffectSettings());
-```
+そのうえで `--uitoolkitlitefx-*` の接頭辞を使って指定します。
 
 ```css
 #Icon {
@@ -182,6 +253,30 @@ icon.SetLiteEffect(new LiteEffectSettings());
 }
 ```
 
+`SetLiteEffect(new LiteEffectSettings())` でも同様に動作しますが、利用側の AI には `EnableLiteEffectFromUss()` のほうが意図を伝えやすいです。
+
+## Tween
+
+更新は `VisualElement.schedule` ベースで、`Coroutine` は使いません。作成した時点で自動再生されるので `Play` は不要です。
+
+```csharp
+icon
+    .AnimateColorAdjust(new ColorAdjustSettings
+    {
+        Multiply = new Color(1.25f, 0.8f, 0.8f, 1f)
+    }, 0.2f)
+    .SetEase(LiteEffectEase.OutQuad)
+    .Append(icon.AnimateGradient(new GradientSettings
+    {
+        From = new Color(1f, 0.4f, 0.2f, 0.6f),
+        To = new Color(0.2f, 0.8f, 1f, 0.2f),
+        Angle = 120f
+    }, 0.45f).SetEase(LiteEffectEase.InOutSine))
+    .OnComplete(() => Debug.Log("LiteEffect tween completed."));
+```
+
+v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` に限定しています。
+
 ## 値の目安
 
 このパッケージは、数値を見ただけで挙動を予測しやすいように、基本の公開レンジを `0..1` に揃えています。一部の角度や補助値は別レンジです。
@@ -200,15 +295,26 @@ icon.SetLiteEffect(new LiteEffectSettings());
 - `Dissolve EdgeColor`: `Color.clear` なら縁色を出さず、そのまま透明に抜けます
 - `Glitch Intensity`: `0..1`。低い値で短い揺れを足す用途を想定しています
 
-サンプルも、この値の意味がそのまま見えるようにしています。`0.5` を中心に動かすと、効果の強弱を直感的に追えます。
+## AI / コード生成向けメモ
+
+- 利用側の AI には、まず単体 API を使わせると意図がぶれにくくなります
+- 複数効果をまとめて管理したい場面だけ `SetLiteEffect` に移るのがおすすめです
+- 各エフェクトは `Enabled` を省略した場合でも、値が入ると自動で有効化されます
+- 自動有効化を前提としているため、AI が差分更新する場合は「どの値を追加したか」を意識すると挙動を説明しやすくなります
+- USS だけで制御したい場合は `EnableLiteEffectFromUss()` を使うと意図が明確です
+
+## 副作用と既知の挙動
+
+- エフェクト適用中は、内部的に `unityBackgroundImageTintColor` や `backgroundColor` を退避して描画用に上書きすることがあります
+- 見た目のトラブルを調べるときは、LiteEffect が背景色や背景画像 tint を一時的に制御している前提で確認すると原因を追いやすくなります
+- `Glow` や `Outline` が有効な間は、見切れを防ぐために周辺描画領域の扱いも内部で調整します
+- `backgroundImage` の元画像を動的に差し替えた場合は `LiteEffectHandle.Refresh()` または再設定を呼ぶと確実です
+- `Glitch` は強度がある間だけ再描画を継続するため、通常利用では低めの値を推奨します
 
 ## 制約
 
 - v1 は矩形領域を前提に描画します
 - 角丸や複雑なマスクには未対応です
 - テキストグリフそのものの加工ではなく、要素の矩形描画レイヤーに対する効果です
-- `backgroundImage` の元画像を動的に差し替えた場合は `LiteEffectHandle.Refresh()` または再設定を呼ぶと確実です
-- v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` に限定しています
 - `Glow` は bloom ではなく、要素外周へはみ出す軽量な発光オーバーレイです
 - `Blur` は背景を本当にぼかすガラス表現ではなく、要素内容をやわらかくする近似です
-- `Glitch` は強度がある間だけ再描画を継続するため、常用は低めの値を推奨します

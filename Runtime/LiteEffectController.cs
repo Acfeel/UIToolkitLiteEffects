@@ -64,6 +64,14 @@ namespace Acfeel.UIToolkitLiteEffects
             Refresh();
         }
 
+        public void EnableFromUssOnly()
+        {
+            tweenController.Kill(false, PromoteExplicitSettings);
+            explicitSettings = new LiteEffectSettings();
+            hasExplicitSettings = false;
+            Refresh();
+        }
+
         public void SetColorAdjust(ColorAdjustSettings settings)
         {
             tweenController.Kill(false, PromoteExplicitSettings);

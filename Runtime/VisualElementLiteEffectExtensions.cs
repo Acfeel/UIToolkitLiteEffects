@@ -4,6 +4,12 @@ namespace Acfeel.UIToolkitLiteEffects
 {
     public static class VisualElementLiteEffectExtensions
     {
+        public static LiteEffectHandle EnableLiteEffectFromUss(this VisualElement element)
+        {
+            LiteEffectControllerRegistry.GetOrCreate(element).EnableFromUssOnly();
+            return new LiteEffectHandle(element);
+        }
+
         public static LiteEffectHandle SetLiteEffect(this VisualElement element, LiteEffectSettings settings)
         {
             var controller = LiteEffectControllerRegistry.GetOrCreate(element);
