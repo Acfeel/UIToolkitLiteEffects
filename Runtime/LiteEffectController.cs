@@ -90,15 +90,6 @@ namespace Acfeel.UIToolkitLiteEffects
             Refresh();
         }
 
-        public void SetBlend(BlendSettings settings)
-        {
-            tweenController.Kill(false, PromoteExplicitSettings);
-            explicitSettings ??= new LiteEffectSettings();
-            explicitSettings.Blend = settings;
-            hasExplicitSettings = true;
-            Refresh();
-        }
-
         public void SetOutline(OutlineSettings settings)
         {
             tweenController.Kill(false, PromoteExplicitSettings);
@@ -314,7 +305,7 @@ namespace Acfeel.UIToolkitLiteEffects
             var sourceTexture = ExtractTexture(element.resolvedStyle.backgroundImage);
             var backgroundColor = sourceTexture != null
                 ? Color.white
-                : backgroundColorSuppressed ? preservedResolvedBackgroundColor : element.resolvedStyle.backgroundColor;
+                : backgroundColorSuppressed ? GetCurrentBackgroundColor() : element.resolvedStyle.backgroundColor;
             if (sourceTexture != null)
             {
                 SuppressBackgroundImageTint();
@@ -411,6 +402,16 @@ namespace Acfeel.UIToolkitLiteEffects
 
             backgroundColorSuppressed = false;
             element.style.backgroundColor = originalInlineBackgroundColor;
+        }
+
+        private Color GetCurrentBackgroundColor()
+        {
+            if (backgroundColorCaptured && originalInlineBackgroundColor.keyword == StyleKeyword.Undefined)
+            {
+                return originalInlineBackgroundColor.value;
+            }
+
+            return preservedResolvedBackgroundColor;
         }
 
         private static Texture ExtractTexture(Background background)

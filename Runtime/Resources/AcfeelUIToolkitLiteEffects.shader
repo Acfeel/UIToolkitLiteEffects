@@ -34,9 +34,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
             float4 _GradientTo;
             float4 _GradientDirection;
             float _GradientMode;
-            float _BlendEnabled;
-            float _BlendMode;
-            float _BlendStrength;
+            float _GradientStrength;
             float _OutlineEnabled;
             float4 _OutlineColor;
             float _OutlineThickness;
@@ -279,7 +277,9 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                     float2 direction = normalize(_GradientDirection.xy);
                     float t = saturate(dot(uv - 0.5, direction) + 0.5);
                     float4 gradient = lerp(_GradientFrom, _GradientTo, t);
-                    processed = ApplyMode(processed, gradient, _GradientMode, 1.0);
+                    float4 gradientApplied = ApplyMode(processed, gradient, _GradientMode, 1.0);
+                    processed = lerp(source, gradientApplied, _GradientStrength);
+                    processed.a = source.a;
                 }
 
                 if (_OutlineEnabled > 0.5 && _OutlineThickness > 0.0001 && _OutlineOpacity > 0.0001)
@@ -287,11 +287,6 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                     float outlineMask = GetOutlineMask(uv, source.a, _OutlineThickness) * _OutlineOpacity;
                     processed.rgb = lerp(processed.rgb, _OutlineColor.rgb, outlineMask * _OutlineColor.a);
                     processed.a = saturate(processed.a + outlineMask * _OutlineColor.a);
-                }
-
-                if (_BlendEnabled > 0.5)
-                {
-                    processed = ApplyMode(source, processed, _BlendMode, _BlendStrength);
                 }
 
                 if (_BlurEnabled > 0.5 && _BlurRadius > 0.0001 && _BlurStrength > 0.0001)

@@ -41,9 +41,7 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly int GradientToId = Shader.PropertyToID("_GradientTo");
         private static readonly int GradientDirectionId = Shader.PropertyToID("_GradientDirection");
         private static readonly int GradientModeId = Shader.PropertyToID("_GradientMode");
-        private static readonly int BlendEnabledId = Shader.PropertyToID("_BlendEnabled");
-        private static readonly int BlendModeId = Shader.PropertyToID("_BlendMode");
-        private static readonly int BlendStrengthId = Shader.PropertyToID("_BlendStrength");
+        private static readonly int GradientStrengthId = Shader.PropertyToID("_GradientStrength");
         private static readonly int OutlineEnabledId = Shader.PropertyToID("_OutlineEnabled");
         private static readonly int GlowEnabledId = Shader.PropertyToID("_GlowEnabled");
         private static readonly int GlowColorId = Shader.PropertyToID("_GlowColor");
@@ -81,9 +79,7 @@ namespace Acfeel.UIToolkitLiteEffects
             material.SetColor(GradientToId, resolvedSettings.Gradient.To);
             material.SetVector(GradientDirectionId, new Vector4(Mathf.Cos(gradientRadians), Mathf.Sin(gradientRadians), 0f, 0f));
             material.SetFloat(GradientModeId, (float)resolvedSettings.Gradient.Mode);
-            material.SetFloat(BlendEnabledId, resolvedSettings.Blend.Enabled ? 1f : 0f);
-            material.SetFloat(BlendModeId, (float)resolvedSettings.Blend.Mode);
-            material.SetFloat(BlendStrengthId, resolvedSettings.Blend.Strength);
+            material.SetFloat(GradientStrengthId, resolvedSettings.Gradient.Strength);
             material.SetFloat(GlowEnabledId, resolvedSettings.Glow.Enabled ? 1f : 0f);
             material.SetColor(GlowColorId, resolvedSettings.Glow.Color);
             material.SetFloat(GlowStrengthId, resolvedSettings.Glow.Strength);

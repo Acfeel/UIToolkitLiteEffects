@@ -31,13 +31,6 @@ namespace Acfeel.UIToolkitLiteEffects
             return new LiteEffectHandle(element);
         }
 
-        public static LiteEffectHandle SetBlend(this VisualElement element, BlendSettings settings)
-        {
-            var controller = LiteEffectControllerRegistry.GetOrCreate(element);
-            controller.SetBlend(settings);
-            return new LiteEffectHandle(element);
-        }
-
         public static LiteEffectHandle SetOutline(this VisualElement element, OutlineSettings settings)
         {
             var controller = LiteEffectControllerRegistry.GetOrCreate(element);

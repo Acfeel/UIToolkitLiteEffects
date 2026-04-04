@@ -8,7 +8,6 @@ namespace Acfeel.UIToolkitLiteEffects
     {
         public ColorAdjustSettings ColorAdjust;
         public GradientSettings Gradient;
-        public BlendSettings Blend;
         public OutlineSettings Outline;
         public GlowSettings Glow;
         public BlurSettings Blur;
@@ -34,13 +33,6 @@ namespace Acfeel.UIToolkitLiteEffects
         public Color? From;
         public Color? To;
         public float? Angle;
-        public LiteEffectBlendMode? Mode;
-    }
-
-    [Serializable]
-    public sealed class BlendSettings
-    {
-        public bool? Enabled;
         public LiteEffectBlendMode? Mode;
         public float? Strength;
     }
@@ -109,7 +101,6 @@ namespace Acfeel.UIToolkitLiteEffects
         public ResolvedLiteEffectSettings(
             ResolvedColorAdjustSettings colorAdjust,
             ResolvedGradientSettings gradient,
-            ResolvedBlendSettings blend,
             ResolvedOutlineSettings outline,
             ResolvedGlowSettings glow,
             ResolvedBlurSettings blur,
@@ -118,7 +109,6 @@ namespace Acfeel.UIToolkitLiteEffects
         {
             ColorAdjust = colorAdjust;
             Gradient = gradient;
-            Blend = blend;
             Outline = outline;
             Glow = glow;
             Blur = blur;
@@ -129,8 +119,6 @@ namespace Acfeel.UIToolkitLiteEffects
         public ResolvedColorAdjustSettings ColorAdjust { get; }
 
         public ResolvedGradientSettings Gradient { get; }
-
-        public ResolvedBlendSettings Blend { get; }
 
         public ResolvedOutlineSettings Outline { get; }
 
@@ -145,7 +133,6 @@ namespace Acfeel.UIToolkitLiteEffects
         public bool HasAnyEffect =>
             ColorAdjust.Enabled
             || Gradient.Enabled
-            || Blend.Enabled
             || Outline.Enabled
             || Glow.Enabled
             || Blur.Enabled
@@ -188,32 +175,21 @@ namespace Acfeel.UIToolkitLiteEffects
             Color from,
             Color to,
             float angle,
-            LiteEffectBlendMode mode)
+            LiteEffectBlendMode mode,
+            float strength)
         {
             Enabled = enabled;
             From = from;
             To = to;
             Angle = angle;
             Mode = mode;
+            Strength = strength;
         }
 
         public bool Enabled { get; }
         public Color From { get; }
         public Color To { get; }
         public float Angle { get; }
-        public LiteEffectBlendMode Mode { get; }
-    }
-
-    internal readonly struct ResolvedBlendSettings
-    {
-        public ResolvedBlendSettings(bool enabled, LiteEffectBlendMode mode, float strength)
-        {
-            Enabled = enabled;
-            Mode = mode;
-            Strength = strength;
-        }
-
-        public bool Enabled { get; }
         public LiteEffectBlendMode Mode { get; }
         public float Strength { get; }
     }
@@ -306,13 +282,12 @@ namespace Acfeel.UIToolkitLiteEffects
         {
             var colorAdjust = ResolveColorAdjust(explicitSettings?.ColorAdjust, ussSettings?.ColorAdjust);
             var gradient = ResolveGradient(explicitSettings?.Gradient, ussSettings?.Gradient);
-            var blend = ResolveBlend(explicitSettings?.Blend, ussSettings?.Blend);
             var outline = ResolveOutline(explicitSettings?.Outline, ussSettings?.Outline);
             var glow = ResolveGlow(explicitSettings?.Glow, ussSettings?.Glow);
             var blur = ResolveBlur(explicitSettings?.Blur, ussSettings?.Blur);
             var dissolve = ResolveDissolve(explicitSettings?.Dissolve, ussSettings?.Dissolve);
             var glitch = ResolveGlitch(explicitSettings?.Glitch, ussSettings?.Glitch);
-            return new ResolvedLiteEffectSettings(colorAdjust, gradient, blend, outline, glow, blur, dissolve, glitch);
+            return new ResolvedLiteEffectSettings(colorAdjust, gradient, outline, glow, blur, dissolve, glitch);
         }
 
         private static ResolvedColorAdjustSettings ResolveColorAdjust(ColorAdjustSettings explicitSettings, ColorAdjustSettings ussSettings)
@@ -339,24 +314,18 @@ namespace Acfeel.UIToolkitLiteEffects
             var to = explicitSettings?.To ?? ussSettings?.To ?? Color.clear;
             var angle = explicitSettings?.Angle ?? ussSettings?.Angle ?? 0f;
             var mode = explicitSettings?.Mode ?? ussSettings?.Mode ?? LiteEffectBlendMode.Mix;
-            var hasAssignedFields = HasAnyAssignedField(explicitSettings) || HasAnyAssignedField(ussSettings);
-            var enabled = explicitSettings?.Enabled
-                ?? ussSettings?.Enabled
-                ?? hasAssignedFields;
-
-            return new ResolvedGradientSettings(enabled, from, to, angle, mode);
-        }
-
-        private static ResolvedBlendSettings ResolveBlend(BlendSettings explicitSettings, BlendSettings ussSettings)
-        {
-            var mode = explicitSettings?.Mode ?? ussSettings?.Mode ?? LiteEffectBlendMode.Mix;
             var strength = Mathf.Clamp01(explicitSettings?.Strength ?? ussSettings?.Strength ?? 1f);
             var hasAssignedFields = HasAnyAssignedField(explicitSettings) || HasAnyAssignedField(ussSettings);
+            var hasGradientColors =
+                (explicitSettings?.From).HasValue
+                || (explicitSettings?.To).HasValue
+                || (ussSettings?.From).HasValue
+                || (ussSettings?.To).HasValue;
             var enabled = explicitSettings?.Enabled
                 ?? ussSettings?.Enabled
-                ?? hasAssignedFields;
+                ?? (hasAssignedFields && hasGradientColors);
 
-            return new ResolvedBlendSettings(enabled, mode, strength);
+            return new ResolvedGradientSettings(enabled, from, to, angle, mode, strength);
         }
 
         private static ResolvedOutlineSettings ResolveOutline(OutlineSettings explicitSettings, OutlineSettings ussSettings)
@@ -427,13 +396,6 @@ namespace Acfeel.UIToolkitLiteEffects
                 || settings.From.HasValue
                 || settings.To.HasValue
                 || settings.Angle.HasValue
-                || settings.Mode.HasValue);
-        }
-
-        private static bool HasAnyAssignedField(BlendSettings settings)
-        {
-            return settings != null
-                && (settings.Enabled.HasValue
                 || settings.Mode.HasValue
                 || settings.Strength.HasValue);
         }

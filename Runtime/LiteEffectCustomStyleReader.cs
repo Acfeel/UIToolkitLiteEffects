@@ -12,8 +12,8 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly CustomStyleProperty<Color> GradientFromProperty = new("--uitoolkitlitefx-gradient-from");
         private static readonly CustomStyleProperty<Color> GradientToProperty = new("--uitoolkitlitefx-gradient-to");
         private static readonly CustomStyleProperty<float> GradientAngleProperty = new("--uitoolkitlitefx-gradient-angle");
-        private static readonly CustomStyleProperty<string> BlendModeProperty = new("--uitoolkitlitefx-blend-mode");
-        private static readonly CustomStyleProperty<float> BlendStrengthProperty = new("--uitoolkitlitefx-blend-strength");
+        private static readonly CustomStyleProperty<string> GradientModeProperty = new("--uitoolkitlitefx-gradient-mode");
+        private static readonly CustomStyleProperty<float> GradientStrengthProperty = new("--uitoolkitlitefx-gradient-strength");
         private static readonly CustomStyleProperty<Color> OutlineColorProperty = new("--uitoolkitlitefx-outline-color");
         private static readonly CustomStyleProperty<float> OutlineThicknessProperty = new("--uitoolkitlitefx-outline-thickness");
         private static readonly CustomStyleProperty<float> OutlineOpacityProperty = new("--uitoolkitlitefx-outline-opacity");
@@ -59,7 +59,9 @@ namespace Acfeel.UIToolkitLiteEffects
 
             if (customStyle.TryGetValue(GradientFromProperty, out var from)
                 || customStyle.TryGetValue(GradientToProperty, out var to)
-                || customStyle.TryGetValue(GradientAngleProperty, out var angle))
+                || customStyle.TryGetValue(GradientAngleProperty, out var angle)
+                || customStyle.TryGetValue(GradientModeProperty, out var gradientModeText)
+                || customStyle.TryGetValue(GradientStrengthProperty, out var gradientStrength))
             {
                 settings.Gradient = new GradientSettings();
 
@@ -77,22 +79,16 @@ namespace Acfeel.UIToolkitLiteEffects
                 {
                     settings.Gradient.Angle = angle;
                 }
-            }
 
-            if (customStyle.TryGetValue(BlendModeProperty, out var modeText)
-                || customStyle.TryGetValue(BlendStrengthProperty, out var blendStrength))
-            {
-                settings.Blend = new BlendSettings();
-
-                if (customStyle.TryGetValue(BlendModeProperty, out modeText)
-                    && Enum.TryParse<LiteEffectBlendMode>(modeText, true, out var mode))
+                if (customStyle.TryGetValue(GradientModeProperty, out gradientModeText)
+                    && Enum.TryParse<LiteEffectBlendMode>(gradientModeText, true, out var mode))
                 {
-                    settings.Blend.Mode = mode;
+                    settings.Gradient.Mode = mode;
                 }
 
-                if (customStyle.TryGetValue(BlendStrengthProperty, out blendStrength))
+                if (customStyle.TryGetValue(GradientStrengthProperty, out gradientStrength))
                 {
-                    settings.Blend.Strength = blendStrength;
+                    settings.Gradient.Strength = gradientStrength;
                 }
             }
 

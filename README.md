@@ -38,7 +38,7 @@ icon.SetGlow(new GlowSettings
 
 ## エフェクト単体で使う
 
-`SetColorAdjust` `SetGradient` `SetBlend` `SetOutline` `SetGlow` `SetBlur` `SetDissolve` `SetGlitch` を使うと、必要なエフェクトだけを個別に指定できます。
+`SetColorAdjust` `SetGradient` `SetOutline` `SetGlow` `SetBlur` `SetDissolve` `SetGlitch` を使うと、必要なエフェクトだけを個別に指定できます。
 
 ### ColorAdjust
 
@@ -58,17 +58,9 @@ icon.SetGradient(new GradientSettings
 {
     From = Color.cyan,
     To = Color.blue,
-    Angle = 90f
-});
-```
-
-### Blend
-
-```csharp
-icon.SetBlend(new BlendSettings
-{
     Mode = LiteEffectBlendMode.Multiply,
-    Strength = 0.35f
+    Strength = 0.35f,
+    Angle = 90f
 });
 ```
 
@@ -167,12 +159,9 @@ icon.SetLiteEffect(new LiteEffectSettings
     {
         From = new Color(1f, 0.4f, 0.2f, 0.55f),
         To = new Color(1f, 0.9f, 0.2f, 0.15f),
-        Angle = 35f
-    },
-    Blend = new BlendSettings
-    {
         Mode = LiteEffectBlendMode.Multiply,
-        Strength = 0.35f
+        Strength = 0.35f,
+        Angle = 35f
     },
     Outline = new OutlineSettings
     {
@@ -231,8 +220,8 @@ icon.EnableLiteEffectFromUss();
     --uitoolkitlitefx-gradient-from: rgba(255, 128, 64, 0.55);
     --uitoolkitlitefx-gradient-to: rgba(255, 255, 64, 0.1);
     --uitoolkitlitefx-gradient-angle: 45;
-    --uitoolkitlitefx-blend-mode: multiply;
-    --uitoolkitlitefx-blend-strength: 0.3;
+    --uitoolkitlitefx-gradient-mode: multiply;
+    --uitoolkitlitefx-gradient-strength: 0.3;
     --uitoolkitlitefx-outline-color: rgba(255, 255, 255, 1);
     --uitoolkitlitefx-outline-thickness: 1.0;
     --uitoolkitlitefx-outline-opacity: 0.6;
@@ -284,7 +273,7 @@ v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` �
 - `Saturation`: `0..1`。`0.5` がニュートラルで、`0` で無彩色、`1` で彩度強めになります
 - `Multiply`: `Color.white` がニュートラルです
 - `Add`: `Color.clear` がニュートラルです
-- `Blend Strength`: `0..1`。`0` で無効、`1` で最大です
+- `Gradient Strength`: `0..1`。`0` で無効、`1` で最大です
 - `Outline Thickness`: `0..1`。`0` で無効、`1` で最も太くなります
 - `Glow Spread`: `0..1`。`0` で無効、`1` で最も広がります
 - `Blur Radius`: `0..1`。`0` で無効、`1` で最も強く広がります

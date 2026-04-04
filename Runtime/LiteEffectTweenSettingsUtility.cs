@@ -15,7 +15,6 @@ namespace Acfeel.UIToolkitLiteEffects
             {
                 ColorAdjust = Clone(settings.ColorAdjust),
                 Gradient = Clone(settings.Gradient),
-                Blend = Clone(settings.Blend),
                 Outline = Clone(settings.Outline),
                 Glow = Clone(settings.Glow),
                 Blur = Clone(settings.Blur),
@@ -55,20 +54,6 @@ namespace Acfeel.UIToolkitLiteEffects
                 From = settings.From,
                 To = settings.To,
                 Angle = settings.Angle,
-                Mode = settings.Mode
-            };
-        }
-
-        public static BlendSettings Clone(BlendSettings settings)
-        {
-            if (settings == null)
-            {
-                return null;
-            }
-
-            return new BlendSettings
-            {
-                Enabled = settings.Enabled,
                 Mode = settings.Mode,
                 Strength = settings.Strength
             };
@@ -174,13 +159,8 @@ namespace Acfeel.UIToolkitLiteEffects
                     From = resolved.Gradient.From,
                     To = resolved.Gradient.To,
                     Angle = resolved.Gradient.Angle,
-                    Mode = resolved.Gradient.Mode
-                },
-                Blend = new BlendSettings
-                {
-                    Enabled = resolved.Blend.Enabled,
-                    Mode = resolved.Blend.Mode,
-                    Strength = resolved.Blend.Strength
+                    Mode = resolved.Gradient.Mode,
+                    Strength = resolved.Gradient.Strength
                 },
                 Outline = new OutlineSettings
                 {
@@ -226,7 +206,6 @@ namespace Acfeel.UIToolkitLiteEffects
             var merged = Clone(baseSettings);
             ApplyColorAdjust(merged, overlay?.ColorAdjust);
             ApplyGradient(merged, overlay?.Gradient);
-            ApplyBlend(merged, overlay?.Blend);
             ApplyOutline(merged, overlay?.Outline);
             ApplyGlow(merged, overlay?.Glow);
             ApplyBlur(merged, overlay?.Blur);
@@ -241,7 +220,6 @@ namespace Acfeel.UIToolkitLiteEffects
             {
                 ColorAdjust = ExtractMasked(source?.ColorAdjust, mask?.ColorAdjust),
                 Gradient = ExtractMasked(source?.Gradient, mask?.Gradient),
-                Blend = ExtractMasked(source?.Blend, mask?.Blend),
                 Outline = ExtractMasked(source?.Outline, mask?.Outline),
                 Glow = ExtractMasked(source?.Glow, mask?.Glow),
                 Blur = ExtractMasked(source?.Blur, mask?.Blur),
@@ -256,7 +234,6 @@ namespace Acfeel.UIToolkitLiteEffects
             {
                 ColorAdjust = LerpPartial(from?.ColorAdjust, to?.ColorAdjust, t),
                 Gradient = LerpPartial(from?.Gradient, to?.Gradient, t),
-                Blend = LerpPartial(from?.Blend, to?.Blend, t),
                 Outline = LerpPartial(from?.Outline, to?.Outline, t),
                 Glow = LerpPartial(from?.Glow, to?.Glow, t),
                 Blur = LerpPartial(from?.Blur, to?.Blur, t),
@@ -269,7 +246,6 @@ namespace Acfeel.UIToolkitLiteEffects
         {
             return HasAnyAssignedField(settings?.ColorAdjust)
                 || HasAnyAssignedField(settings?.Gradient)
-                || HasAnyAssignedField(settings?.Blend)
                 || HasAnyAssignedField(settings?.Outline)
                 || HasAnyAssignedField(settings?.Glow)
                 || HasAnyAssignedField(settings?.Blur)
@@ -350,30 +326,10 @@ namespace Acfeel.UIToolkitLiteEffects
             {
                 destination.Gradient.Mode = overlay.Mode;
             }
-        }
-
-        private static void ApplyBlend(LiteEffectSettings destination, BlendSettings overlay)
-        {
-            if (overlay == null)
-            {
-                return;
-            }
-
-            destination.Blend ??= new BlendSettings();
-
-            if (overlay.Enabled.HasValue)
-            {
-                destination.Blend.Enabled = overlay.Enabled;
-            }
-
-            if (overlay.Mode.HasValue)
-            {
-                destination.Blend.Mode = overlay.Mode;
-            }
 
             if (overlay.Strength.HasValue)
             {
-                destination.Blend.Strength = overlay.Strength;
+                destination.Gradient.Strength = overlay.Strength;
             }
         }
 
@@ -563,20 +519,6 @@ namespace Acfeel.UIToolkitLiteEffects
                 From = mask.From.HasValue ? source?.From : null,
                 To = mask.To.HasValue ? source?.To : null,
                 Angle = mask.Angle.HasValue ? source?.Angle : null,
-                Mode = mask.Mode.HasValue ? source?.Mode : null
-            };
-        }
-
-        private static BlendSettings ExtractMasked(BlendSettings source, BlendSettings mask)
-        {
-            if (mask == null)
-            {
-                return null;
-            }
-
-            return new BlendSettings
-            {
-                Enabled = mask.Enabled.HasValue ? source?.Enabled : null,
                 Mode = mask.Mode.HasValue ? source?.Mode : null,
                 Strength = mask.Strength.HasValue ? source?.Strength : null
             };
@@ -694,20 +636,6 @@ namespace Acfeel.UIToolkitLiteEffects
                 From = LerpColor(from?.From, to?.From, t),
                 To = LerpColor(from?.To, to?.To, t),
                 Angle = LerpFloat(from?.Angle, to?.Angle, t),
-                Mode = LerpEnum(from?.Mode, to?.Mode, t)
-            };
-        }
-
-        private static BlendSettings LerpPartial(BlendSettings from, BlendSettings to, float t)
-        {
-            if (from == null && to == null)
-            {
-                return null;
-            }
-
-            return new BlendSettings
-            {
-                Enabled = LerpBool(from?.Enabled, to?.Enabled, t),
                 Mode = LerpEnum(from?.Mode, to?.Mode, t),
                 Strength = LerpFloat(from?.Strength, to?.Strength, t)
             };
@@ -812,13 +740,6 @@ namespace Acfeel.UIToolkitLiteEffects
                 || settings.From.HasValue
                 || settings.To.HasValue
                 || settings.Angle.HasValue
-                || settings.Mode.HasValue);
-        }
-
-        private static bool HasAnyAssignedField(BlendSettings settings)
-        {
-            return settings != null
-                && (settings.Enabled.HasValue
                 || settings.Mode.HasValue
                 || settings.Strength.HasValue);
         }
