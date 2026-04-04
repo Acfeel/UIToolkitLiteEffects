@@ -21,7 +21,7 @@ Unity UI Toolkit 向けの軽量ビジュアルエフェクトパッケージで
 https://github.com/acfeel/UIToolkitLiteEffects.git
 ```
 
-## 最初の使い方
+## 基本的な使い方
 
 ```csharp
 using Acfeel.UIToolkitLiteEffects;
@@ -35,8 +35,6 @@ icon.SetGlow(new GlowSettings
     Spread = 0.85f
 });
 ```
-
-利用側の AI には、まず `SetGlow` のような単体 API を使わせるのが最もわかりやすいです。
 
 ## エフェクト単体で使う
 
