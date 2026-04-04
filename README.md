@@ -148,7 +148,7 @@ icon
 ;
 ```
 
-USS カスタムプロパティだけを使いたい場合は、空の設定でコントローラだけ有効化してください。
+USS カスタムプロパティだけを使いたい場合は、`--uitoolkitlitefx-*` の接頭辞で指定してください。空の設定でコントローラだけ有効化しても使えます。
 
 ```csharp
 icon.SetLiteEffect(new LiteEffectSettings());
@@ -156,29 +156,29 @@ icon.SetLiteEffect(new LiteEffectSettings());
 
 ```css
 #Icon {
-    --ac-litefx-brightness: 0.54;
-    --ac-litefx-contrast: 0.58;
-    --ac-litefx-saturation: 0.62;
-    --ac-litefx-gradient-from: rgba(255, 128, 64, 0.55);
-    --ac-litefx-gradient-to: rgba(255, 255, 64, 0.1);
-    --ac-litefx-gradient-angle: 45;
-    --ac-litefx-blend-mode: multiply;
-    --ac-litefx-blend-strength: 0.3;
-    --ac-litefx-outline-color: rgba(255, 255, 255, 1);
-    --ac-litefx-outline-thickness: 1.0;
-    --ac-litefx-outline-opacity: 0.6;
-    --ac-litefx-glow-color: rgba(90, 200, 255, 1);
-    --ac-litefx-glow-strength: 0.22;
-    --ac-litefx-glow-spread: 1.2;
-    --ac-litefx-blur-radius: 1.0;
-    --ac-litefx-blur-strength: 0.25;
-    --ac-litefx-dissolve-amount: 0.15;
-    --ac-litefx-dissolve-edge-width: 0.08;
-    --ac-litefx-dissolve-edge-color: rgba(255, 160, 64, 1);
-    --ac-litefx-glitch-intensity: 0.2;
-    --ac-litefx-glitch-jitter: 0.45;
-    --ac-litefx-glitch-color-shift: 0.35;
-    --ac-litefx-glitch-scanline-strength: 0.25;
+    --uitoolkitlitefx-brightness: 0.54;
+    --uitoolkitlitefx-contrast: 0.58;
+    --uitoolkitlitefx-saturation: 0.62;
+    --uitoolkitlitefx-gradient-from: rgba(255, 128, 64, 0.55);
+    --uitoolkitlitefx-gradient-to: rgba(255, 255, 64, 0.1);
+    --uitoolkitlitefx-gradient-angle: 45;
+    --uitoolkitlitefx-blend-mode: multiply;
+    --uitoolkitlitefx-blend-strength: 0.3;
+    --uitoolkitlitefx-outline-color: rgba(255, 255, 255, 1);
+    --uitoolkitlitefx-outline-thickness: 1.0;
+    --uitoolkitlitefx-outline-opacity: 0.6;
+    --uitoolkitlitefx-glow-color: rgba(90, 200, 255, 1);
+    --uitoolkitlitefx-glow-strength: 0.22;
+    --uitoolkitlitefx-glow-spread: 1.2;
+    --uitoolkitlitefx-blur-radius: 1.0;
+    --uitoolkitlitefx-blur-strength: 0.25;
+    --uitoolkitlitefx-dissolve-amount: 0.15;
+    --uitoolkitlitefx-dissolve-edge-width: 0.08;
+    --uitoolkitlitefx-dissolve-edge-color: rgba(255, 160, 64, 1);
+    --uitoolkitlitefx-glitch-intensity: 0.2;
+    --uitoolkitlitefx-glitch-jitter: 0.45;
+    --uitoolkitlitefx-glitch-color-shift: 0.35;
+    --uitoolkitlitefx-glitch-scanline-strength: 0.25;
 }
 ```
 

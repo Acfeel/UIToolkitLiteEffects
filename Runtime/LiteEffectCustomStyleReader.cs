@@ -6,30 +6,30 @@ namespace Acfeel.UIToolkitLiteEffects
 {
     internal static class LiteEffectCustomStyleReader
     {
-        private static readonly CustomStyleProperty<float> BrightnessProperty = new("--ac-litefx-brightness");
-        private static readonly CustomStyleProperty<float> ContrastProperty = new("--ac-litefx-contrast");
-        private static readonly CustomStyleProperty<float> SaturationProperty = new("--ac-litefx-saturation");
-        private static readonly CustomStyleProperty<Color> GradientFromProperty = new("--ac-litefx-gradient-from");
-        private static readonly CustomStyleProperty<Color> GradientToProperty = new("--ac-litefx-gradient-to");
-        private static readonly CustomStyleProperty<float> GradientAngleProperty = new("--ac-litefx-gradient-angle");
-        private static readonly CustomStyleProperty<string> BlendModeProperty = new("--ac-litefx-blend-mode");
-        private static readonly CustomStyleProperty<float> BlendStrengthProperty = new("--ac-litefx-blend-strength");
-        private static readonly CustomStyleProperty<Color> OutlineColorProperty = new("--ac-litefx-outline-color");
-        private static readonly CustomStyleProperty<float> OutlineThicknessProperty = new("--ac-litefx-outline-thickness");
-        private static readonly CustomStyleProperty<float> OutlineOpacityProperty = new("--ac-litefx-outline-opacity");
-        private static readonly CustomStyleProperty<string> OutlineQualityProperty = new("--ac-litefx-outline-quality");
-        private static readonly CustomStyleProperty<Color> GlowColorProperty = new("--ac-litefx-glow-color");
-        private static readonly CustomStyleProperty<float> GlowStrengthProperty = new("--ac-litefx-glow-strength");
-        private static readonly CustomStyleProperty<float> GlowSpreadProperty = new("--ac-litefx-glow-spread");
-        private static readonly CustomStyleProperty<float> BlurRadiusProperty = new("--ac-litefx-blur-radius");
-        private static readonly CustomStyleProperty<float> BlurStrengthProperty = new("--ac-litefx-blur-strength");
-        private static readonly CustomStyleProperty<float> DissolveAmountProperty = new("--ac-litefx-dissolve-amount");
-        private static readonly CustomStyleProperty<float> DissolveEdgeWidthProperty = new("--ac-litefx-dissolve-edge-width");
-        private static readonly CustomStyleProperty<Color> DissolveEdgeColorProperty = new("--ac-litefx-dissolve-edge-color");
-        private static readonly CustomStyleProperty<float> GlitchIntensityProperty = new("--ac-litefx-glitch-intensity");
-        private static readonly CustomStyleProperty<float> GlitchJitterProperty = new("--ac-litefx-glitch-jitter");
-        private static readonly CustomStyleProperty<float> GlitchColorShiftProperty = new("--ac-litefx-glitch-color-shift");
-        private static readonly CustomStyleProperty<float> GlitchScanlineStrengthProperty = new("--ac-litefx-glitch-scanline-strength");
+        private static readonly CustomStyleProperty<float> BrightnessProperty = new("--uitoolkitlitefx-brightness");
+        private static readonly CustomStyleProperty<float> ContrastProperty = new("--uitoolkitlitefx-contrast");
+        private static readonly CustomStyleProperty<float> SaturationProperty = new("--uitoolkitlitefx-saturation");
+        private static readonly CustomStyleProperty<Color> GradientFromProperty = new("--uitoolkitlitefx-gradient-from");
+        private static readonly CustomStyleProperty<Color> GradientToProperty = new("--uitoolkitlitefx-gradient-to");
+        private static readonly CustomStyleProperty<float> GradientAngleProperty = new("--uitoolkitlitefx-gradient-angle");
+        private static readonly CustomStyleProperty<string> BlendModeProperty = new("--uitoolkitlitefx-blend-mode");
+        private static readonly CustomStyleProperty<float> BlendStrengthProperty = new("--uitoolkitlitefx-blend-strength");
+        private static readonly CustomStyleProperty<Color> OutlineColorProperty = new("--uitoolkitlitefx-outline-color");
+        private static readonly CustomStyleProperty<float> OutlineThicknessProperty = new("--uitoolkitlitefx-outline-thickness");
+        private static readonly CustomStyleProperty<float> OutlineOpacityProperty = new("--uitoolkitlitefx-outline-opacity");
+        private static readonly CustomStyleProperty<string> OutlineQualityProperty = new("--uitoolkitlitefx-outline-quality");
+        private static readonly CustomStyleProperty<Color> GlowColorProperty = new("--uitoolkitlitefx-glow-color");
+        private static readonly CustomStyleProperty<float> GlowStrengthProperty = new("--uitoolkitlitefx-glow-strength");
+        private static readonly CustomStyleProperty<float> GlowSpreadProperty = new("--uitoolkitlitefx-glow-spread");
+        private static readonly CustomStyleProperty<float> BlurRadiusProperty = new("--uitoolkitlitefx-blur-radius");
+        private static readonly CustomStyleProperty<float> BlurStrengthProperty = new("--uitoolkitlitefx-blur-strength");
+        private static readonly CustomStyleProperty<float> DissolveAmountProperty = new("--uitoolkitlitefx-dissolve-amount");
+        private static readonly CustomStyleProperty<float> DissolveEdgeWidthProperty = new("--uitoolkitlitefx-dissolve-edge-width");
+        private static readonly CustomStyleProperty<Color> DissolveEdgeColorProperty = new("--uitoolkitlitefx-dissolve-edge-color");
+        private static readonly CustomStyleProperty<float> GlitchIntensityProperty = new("--uitoolkitlitefx-glitch-intensity");
+        private static readonly CustomStyleProperty<float> GlitchJitterProperty = new("--uitoolkitlitefx-glitch-jitter");
+        private static readonly CustomStyleProperty<float> GlitchColorShiftProperty = new("--uitoolkitlitefx-glitch-color-shift");
+        private static readonly CustomStyleProperty<float> GlitchScanlineStrengthProperty = new("--uitoolkitlitefx-glitch-scanline-strength");
 
         public static LiteEffectSettings Read(ICustomStyle customStyle)
         {
