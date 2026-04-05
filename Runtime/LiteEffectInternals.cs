@@ -248,8 +248,7 @@ namespace Acfeel.UIToolkitLiteEffects
         private readonly VisualElement element;
         private readonly Action refreshAction;
         private IVisualElementScheduledItem tweenScheduledItem;
-        private LiteEffectTweenRuntimeSequence activeTweenSequence;
-        private double tweenStartTime;
+        private readonly System.Collections.Generic.List<LiteEffectActiveTweenSequence> activeTweenSequences = new();
 
         public LiteEffectTweenController(VisualElement element, Action refreshAction)
         {
@@ -275,9 +274,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            Kill(false, null);
-            activeTweenSequence = compiled;
-            tweenStartTime = Time.realtimeSinceStartupAsDouble;
+            activeTweenSequences.Add(new LiteEffectActiveTweenSequence(compiled, Time.realtimeSinceStartupAsDouble));
             EnsureScheduler();
             UpdateTween();
         }
@@ -291,7 +288,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
             HasTweenSettings = false;
             TweenSettings = new LiteEffectSettings();
-            activeTweenSequence = null;
+            activeTweenSequences.Clear();
 
             if (tweenScheduledItem != null)
             {
@@ -363,7 +360,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         private void UpdateTween()
         {
-            if (activeTweenSequence == null)
+            if (activeTweenSequences.Count == 0)
             {
                 Kill(false, null);
                 return;
@@ -374,26 +371,87 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            if (!activeTweenSequence.TryEvaluate((float)(Time.realtimeSinceStartupAsDouble - tweenStartTime), out var frame, out var completed)
-                || frame == null)
+            var now = Time.realtimeSinceStartupAsDouble;
+            var mergedFrame = new LiteEffectSettings();
+            var hasFrame = false;
+            System.Collections.Generic.List<Action> completedCallbacks = null;
+
+            for (var i = 0; i < activeTweenSequences.Count; i++)
+            {
+                var activeSequence = activeTweenSequences[i];
+                if (!activeSequence.Sequence.TryEvaluate((float)(now - activeSequence.StartTime), out var frame, out var completed)
+                    || frame == null)
+                {
+                    activeTweenSequences.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+
+                mergedFrame = LiteEffectTweenSettingsUtility.Merge(mergedFrame, frame);
+                hasFrame = true;
+
+                if (!completed)
+                {
+                    continue;
+                }
+
+                completedCallbacks ??= new System.Collections.Generic.List<Action>();
+                if (activeSequence.Sequence.OnComplete != null)
+                {
+                    completedCallbacks.Add(activeSequence.Sequence.OnComplete);
+                }
+
+                activeTweenSequences.RemoveAt(i);
+                i--;
+            }
+
+            if (!hasFrame)
             {
                 Kill(false, null);
                 return;
             }
 
             HasTweenSettings = true;
-            TweenSettings = LiteEffectTweenSettingsUtility.Clone(frame);
+            TweenSettings = LiteEffectTweenSettingsUtility.Clone(mergedFrame);
             refreshAction?.Invoke();
 
-            if (!completed)
+            if (activeTweenSequences.Count > 0)
+            {
+                if (completedCallbacks != null)
+                {
+                    foreach (var callback in completedCallbacks)
+                    {
+                        callback?.Invoke();
+                    }
+                }
+
+                return;
+            }
+
+            Kill(false, null);
+            if (completedCallbacks == null)
             {
                 return;
             }
 
-            var callback = activeTweenSequence.OnComplete;
-            Kill(false, null);
-            callback?.Invoke();
+            foreach (var callback in completedCallbacks)
+            {
+                callback?.Invoke();
+            }
         }
+    }
+
+    internal readonly struct LiteEffectActiveTweenSequence
+    {
+        public LiteEffectActiveTweenSequence(LiteEffectTweenRuntimeSequence sequence, double startTime)
+        {
+            Sequence = sequence;
+            StartTime = startTime;
+        }
+
+        public LiteEffectTweenRuntimeSequence Sequence { get; }
+
+        public double StartTime { get; }
     }
 
     internal sealed class LiteEffectOverflowController : IDisposable
