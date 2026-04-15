@@ -58,7 +58,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void Apply(LiteEffectSettings settings)
         {
-            tweenController.Kill(false, PromoteExplicitSettings);
+            tweenController.Kill(null, false, PromoteExplicitSettings);
             explicitSettings = settings ?? new LiteEffectSettings();
             hasExplicitSettings = true;
             Refresh();
@@ -66,7 +66,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void EnableFromUssOnly()
         {
-            tweenController.Kill(false, PromoteExplicitSettings);
+            tweenController.Kill(null, false, PromoteExplicitSettings);
             explicitSettings = new LiteEffectSettings();
             hasExplicitSettings = false;
             Refresh();
@@ -74,7 +74,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void SetColorAdjust(ColorAdjustSettings settings)
         {
-            tweenController.Kill(false, PromoteExplicitSettings);
+            tweenController.Kill(null, false, PromoteExplicitSettings);
             explicitSettings ??= new LiteEffectSettings();
             explicitSettings.ColorAdjust = settings;
             hasExplicitSettings = true;
@@ -83,7 +83,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void SetGradient(GradientSettings settings)
         {
-            tweenController.Kill(false, PromoteExplicitSettings);
+            tweenController.Kill(null, false, PromoteExplicitSettings);
             explicitSettings ??= new LiteEffectSettings();
             explicitSettings.Gradient = settings;
             hasExplicitSettings = true;
@@ -92,7 +92,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void SetOutline(OutlineSettings settings)
         {
-            tweenController.Kill(false, PromoteExplicitSettings);
+            tweenController.Kill(null, false, PromoteExplicitSettings);
             explicitSettings ??= new LiteEffectSettings();
             explicitSettings.Outline = settings;
             hasExplicitSettings = true;
@@ -101,7 +101,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void SetGlow(GlowSettings settings)
         {
-            tweenController.Kill(false, PromoteExplicitSettings);
+            tweenController.Kill(null, false, PromoteExplicitSettings);
             explicitSettings ??= new LiteEffectSettings();
             explicitSettings.Glow = settings;
             hasExplicitSettings = true;
@@ -110,7 +110,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void SetBlur(BlurSettings settings)
         {
-            tweenController.Kill(false, PromoteExplicitSettings);
+            tweenController.Kill(null, false, PromoteExplicitSettings);
             explicitSettings ??= new LiteEffectSettings();
             explicitSettings.Blur = settings;
             hasExplicitSettings = true;
@@ -119,7 +119,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void SetDissolve(DissolveSettings settings)
         {
-            tweenController.Kill(false, PromoteExplicitSettings);
+            tweenController.Kill(null, false, PromoteExplicitSettings);
             explicitSettings ??= new LiteEffectSettings();
             explicitSettings.Dissolve = settings;
             hasExplicitSettings = true;
@@ -128,7 +128,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void SetGlitch(GlitchSettings settings)
         {
-            tweenController.Kill(false, PromoteExplicitSettings);
+            tweenController.Kill(null, false, PromoteExplicitSettings);
             explicitSettings ??= new LiteEffectSettings();
             explicitSettings.Glitch = settings;
             hasExplicitSettings = true;
@@ -137,20 +137,20 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void ClearExplicit()
         {
-            tweenController.Kill(false, PromoteExplicitSettings);
+            tweenController.Kill(null, false, PromoteExplicitSettings);
             explicitSettings = new LiteEffectSettings();
             hasExplicitSettings = false;
             Refresh();
         }
 
-        internal void PlayTweenSequence(LiteEffectTweenSequenceDefinition sequence)
+        internal void PlayTweenSequence(LiteEffectTweenSequenceDefinition sequence, object owner)
         {
-            tweenController.PlaySequence(sequence, CaptureTweenStartSettings());
+            tweenController.PlaySequence(sequence, CaptureTweenStartSettings(), owner);
         }
 
-        internal void KillActiveTween(bool keepCurrentValue)
+        internal void KillActiveTween(object owner, bool keepCurrentValue)
         {
-            tweenController.Kill(keepCurrentValue, PromoteExplicitSettings);
+            tweenController.Kill(owner, keepCurrentValue, PromoteExplicitSettings);
         }
 
         public void Refresh()
@@ -194,7 +194,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            tweenController.Kill(true, PromoteExplicitSettings);
+            tweenController.Kill(null, true, PromoteExplicitSettings);
             overflowController.SetExpanded(false);
             glowOverlayController.Detach();
             outlineOverlayController.Detach();

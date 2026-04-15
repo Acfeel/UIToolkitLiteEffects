@@ -261,7 +261,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public LiteEffectSettings TweenSettings { get; private set; }
 
-        public void PlaySequence(LiteEffectTweenSequenceDefinition sequence, LiteEffectSettings startState)
+        public void PlaySequence(LiteEffectTweenSequenceDefinition sequence, LiteEffectSettings startState, object owner)
         {
             if (sequence == null || !sequence.HasTweens)
             {
@@ -274,23 +274,23 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            activeTweenSequences.Add(new LiteEffectActiveTweenSequence(compiled, Time.realtimeSinceStartupAsDouble));
+            RemoveSequences(owner);
+            activeTweenSequences.Add(new LiteEffectActiveTweenSequence(owner, compiled, Time.realtimeSinceStartupAsDouble));
             EnsureScheduler();
             UpdateTween();
         }
 
-        public void Kill(bool keepCurrentValue, Action<LiteEffectSettings> promoteExplicit)
+        public void Kill(object owner, bool keepCurrentValue, Action<LiteEffectSettings> promoteExplicit)
         {
-            if (HasTweenSettings && keepCurrentValue)
+            if (keepCurrentValue && TryBuildCurrentFrame(out var currentFrame))
             {
-                promoteExplicit?.Invoke(LiteEffectTweenSettingsUtility.Clone(TweenSettings));
+                promoteExplicit?.Invoke(currentFrame);
             }
 
-            HasTweenSettings = false;
-            TweenSettings = new LiteEffectSettings();
-            activeTweenSequences.Clear();
+            RemoveSequences(owner);
+            RecalculateCurrentTweenState();
 
-            if (tweenScheduledItem != null)
+            if (activeTweenSequences.Count == 0 && tweenScheduledItem != null)
             {
                 tweenScheduledItem.Pause();
             }
@@ -298,7 +298,14 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void Dispose()
         {
-            Kill(false, null);
+            activeTweenSequences.Clear();
+            HasTweenSettings = false;
+            TweenSettings = new LiteEffectSettings();
+
+            if (tweenScheduledItem != null)
+            {
+                tweenScheduledItem.Pause();
+            }
         }
 
         private LiteEffectTweenRuntimeSequence CompileTweenSequence(LiteEffectTweenSequenceDefinition sequence, LiteEffectSettings startState)
@@ -362,7 +369,13 @@ namespace Acfeel.UIToolkitLiteEffects
         {
             if (activeTweenSequences.Count == 0)
             {
-                Kill(false, null);
+                HasTweenSettings = false;
+                TweenSettings = new LiteEffectSettings();
+
+                if (tweenScheduledItem != null)
+                {
+                    tweenScheduledItem.Pause();
+                }
                 return;
             }
 
@@ -407,7 +420,13 @@ namespace Acfeel.UIToolkitLiteEffects
 
             if (!hasFrame)
             {
-                Kill(false, null);
+                HasTweenSettings = false;
+                TweenSettings = new LiteEffectSettings();
+
+                if (tweenScheduledItem != null)
+                {
+                    tweenScheduledItem.Pause();
+                }
                 return;
             }
 
@@ -428,7 +447,14 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            Kill(false, null);
+            HasTweenSettings = false;
+            TweenSettings = new LiteEffectSettings();
+
+            if (tweenScheduledItem != null)
+            {
+                tweenScheduledItem.Pause();
+            }
+
             if (completedCallbacks == null)
             {
                 return;
@@ -439,15 +465,86 @@ namespace Acfeel.UIToolkitLiteEffects
                 callback?.Invoke();
             }
         }
+
+        private void RemoveSequences(object owner)
+        {
+            if (owner == null)
+            {
+                activeTweenSequences.Clear();
+                return;
+            }
+
+            for (var i = activeTweenSequences.Count - 1; i >= 0; i--)
+            {
+                if (ReferenceEquals(activeTweenSequences[i].Owner, owner))
+                {
+                    activeTweenSequences.RemoveAt(i);
+                }
+            }
+        }
+
+        private void RecalculateCurrentTweenState()
+        {
+            if (!TryBuildCurrentFrame(out var currentFrame))
+            {
+                HasTweenSettings = false;
+                TweenSettings = new LiteEffectSettings();
+                refreshAction?.Invoke();
+                return;
+            }
+
+            HasTweenSettings = true;
+            TweenSettings = currentFrame;
+            refreshAction?.Invoke();
+        }
+
+        private bool TryBuildCurrentFrame(out LiteEffectSettings currentFrame)
+        {
+            currentFrame = null;
+
+            if (activeTweenSequences.Count == 0 || element.panel == null)
+            {
+                return false;
+            }
+
+            var now = Time.realtimeSinceStartupAsDouble;
+            var mergedFrame = new LiteEffectSettings();
+            var hasFrame = false;
+
+            for (var i = activeTweenSequences.Count - 1; i >= 0; i--)
+            {
+                var activeSequence = activeTweenSequences[i];
+                if (!activeSequence.Sequence.TryEvaluate((float)(now - activeSequence.StartTime), out var frame, out _)
+                    || frame == null)
+                {
+                    activeTweenSequences.RemoveAt(i);
+                    continue;
+                }
+
+                mergedFrame = LiteEffectTweenSettingsUtility.Merge(mergedFrame, frame);
+                hasFrame = true;
+            }
+
+            if (!hasFrame)
+            {
+                return false;
+            }
+
+            currentFrame = LiteEffectTweenSettingsUtility.Clone(mergedFrame);
+            return true;
+        }
     }
 
     internal readonly struct LiteEffectActiveTweenSequence
     {
-        public LiteEffectActiveTweenSequence(LiteEffectTweenRuntimeSequence sequence, double startTime)
+        public LiteEffectActiveTweenSequence(object owner, LiteEffectTweenRuntimeSequence sequence, double startTime)
         {
+            Owner = owner;
             Sequence = sequence;
             StartTime = startTime;
         }
+
+        public object Owner { get; }
 
         public LiteEffectTweenRuntimeSequence Sequence { get; }
 

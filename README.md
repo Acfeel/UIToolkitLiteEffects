@@ -270,6 +270,12 @@ icon
 
 v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` に限定しています。
 
+### Tween の補足挙動
+
+- `Append` / `Join` に渡した Tween は、その時点で単独再生キューから外れ、連結先 sequence の一部として再生されます
+- Tween を panel 未接続の `VisualElement` に対して作成した場合でも、要素が panel にアタッチされたあと自動で再生されます
+- `LiteEffectTween.Kill()` と `LiteEffectSequence.Kill()` は、そのハンドルに対応する Tween だけを停止します。他の並行 Tween は停止しません
+
 ## 値の目安
 
 このパッケージは、数値を見ただけで挙動を予測しやすいように、基本の公開レンジを `0..1` に揃えています。一部の角度や補助値は別レンジです。

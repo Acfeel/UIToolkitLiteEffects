@@ -31,6 +31,8 @@ namespace Acfeel.UIToolkitLiteEffects
 
         internal LiteEffectTweenDefinition Definition => definition;
 
+        internal void DetachForComposition() => playback.DetachForComposition();
+
         public LiteEffectTween SetEase(LiteEffectEase ease)
         {
             definition.Ease = ease;
@@ -83,6 +85,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 throw new InvalidOperationException("LiteEffectTween can only append tweens that target the same VisualElement.");
             }
 
+            tween.DetachForComposition();
             return tween.Definition.Clone();
         }
     }
@@ -134,6 +137,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 throw new InvalidOperationException("LiteEffectSequence can only append tweens that target the same VisualElement.");
             }
 
+            tween.DetachForComposition();
             return tween.Definition.Clone();
         }
     }
@@ -225,6 +229,7 @@ namespace Acfeel.UIToolkitLiteEffects
     internal sealed class LiteEffectTweenPlayback
     {
         private readonly VisualElement element;
+        private readonly object owner = new();
         private bool autoPlayScheduled;
         private bool started;
         private bool killed;
@@ -260,7 +265,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
             if (started)
             {
-                LiteEffectControllerRegistry.GetOrCreate(element).PlayTweenSequence(Sequence.Clone());
+                LiteEffectControllerRegistry.GetOrCreate(element).PlayTweenSequence(Sequence.Clone(), owner);
             }
             else
             {
@@ -271,15 +276,22 @@ namespace Acfeel.UIToolkitLiteEffects
         public void Kill()
         {
             killed = true;
-            autoPlayScheduled = false;
+            started = false;
+            CancelAutoPlay();
+            LiteEffectControllerRegistry.GetOrCreate(element).KillActiveTween(owner, false);
+        }
 
-            if (autoPlayItem != null)
+        internal void DetachForComposition()
+        {
+            if (killed)
             {
-                autoPlayItem.Pause();
-                autoPlayItem = null;
+                return;
             }
 
-            LiteEffectControllerRegistry.GetOrCreate(element).KillActiveTween(false);
+            killed = true;
+            started = false;
+            CancelAutoPlay();
+            LiteEffectControllerRegistry.GetOrCreate(element).KillActiveTween(owner, false);
         }
 
         private void AutoPlay()
@@ -287,13 +299,32 @@ namespace Acfeel.UIToolkitLiteEffects
             autoPlayScheduled = false;
             autoPlayItem = null;
 
-            if (killed || element.panel == null || !Sequence.HasTweens)
+            if (killed || !Sequence.HasTweens)
             {
                 return;
             }
 
+            if (element.panel == null)
+            {
+                ScheduleAutoPlay();
+                return;
+            }
+
             started = true;
-            LiteEffectControllerRegistry.GetOrCreate(element).PlayTweenSequence(Sequence.Clone());
+            LiteEffectControllerRegistry.GetOrCreate(element).PlayTweenSequence(Sequence.Clone(), owner);
+        }
+
+        private void CancelAutoPlay()
+        {
+            autoPlayScheduled = false;
+
+            if (autoPlayItem == null)
+            {
+                return;
+            }
+
+            autoPlayItem.Pause();
+            autoPlayItem = null;
         }
     }
 
