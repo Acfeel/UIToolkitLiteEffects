@@ -24,7 +24,7 @@ Unity UI Toolkit 向けの軽量ビジュアルエフェクトパッケージで
 3. 次の URL を貼り付けます
 
 ```text
-https://github.com/napiiey/UIToolkitLiteEffects.git
+https://github.com/Acfeel/UIToolkitLiteEffects.git
 ```
 
 ## 基本的な使い方
