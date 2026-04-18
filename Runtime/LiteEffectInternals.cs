@@ -97,7 +97,7 @@ namespace Acfeel.UIToolkitLiteEffects
             material.SetFloat(GlitchColorShiftId, resolvedSettings.Glitch.ColorShift);
             material.SetFloat(GlitchScanlineStrengthId, resolvedSettings.Glitch.ScanlineStrength);
             material.SetFloat(TimeId, Time.unscaledTime);
-            material.SetFloat(OutlineEnabledId, 0f);
+            material.SetFloat(OutlineEnabledId, 0f); // Outline is rendered via overlay element, not the main shader pass
             material.SetVector(TexelSizeId, new Vector4(1f / processedTexture.width, 1f / processedTexture.height, processedTexture.width, processedTexture.height));
             material.SetVector(ContentUvRectId, new Vector4(0f, 0f, 1f, 1f));
         }
@@ -120,6 +120,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
     internal static class LiteEffectNormalizedRange
     {
+        // Maximum pixel sizes for normalized [0..1] input values in USS and the C# API.
         public const float OutlineThicknessMaxPixels = 4f;
         public const float GlowSpreadMaxPixels = 4f;
 

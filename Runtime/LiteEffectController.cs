@@ -404,9 +404,11 @@ namespace Acfeel.UIToolkitLiteEffects
             element.style.backgroundColor = originalInlineBackgroundColor;
         }
 
+        // Precondition: only called when backgroundColorSuppressed == true,
+        // which guarantees backgroundColorCaptured == true and preservedResolvedBackgroundColor is set.
         private Color GetCurrentBackgroundColor()
         {
-            if (backgroundColorCaptured && originalInlineBackgroundColor.keyword == StyleKeyword.Undefined)
+            if (originalInlineBackgroundColor.keyword == StyleKeyword.Undefined)
             {
                 return originalInlineBackgroundColor.value;
             }
