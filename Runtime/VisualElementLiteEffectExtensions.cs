@@ -66,6 +66,13 @@ namespace Acfeel.UIToolkitLiteEffects
             return new LiteEffectHandle(element);
         }
 
+        public static LiteEffectHandle SetColorize(this VisualElement element, ColorizeSettings settings)
+        {
+            var controller = LiteEffectControllerRegistry.GetOrCreate(element);
+            controller.SetColorize(settings);
+            return new LiteEffectHandle(element);
+        }
+
         public static void ClearLiteEffect(this VisualElement element)
         {
             LiteEffectControllerRegistry.GetOrCreate(element).ClearExplicit();

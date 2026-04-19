@@ -19,7 +19,8 @@ namespace Acfeel.UIToolkitLiteEffects
                 Glow = Clone(settings.Glow),
                 Blur = Clone(settings.Blur),
                 Dissolve = Clone(settings.Dissolve),
-                Glitch = Clone(settings.Glitch)
+                Glitch = Clone(settings.Glitch),
+                Colorize = Clone(settings.Colorize)
             };
         }
 
@@ -140,6 +141,21 @@ namespace Acfeel.UIToolkitLiteEffects
             };
         }
 
+        public static ColorizeSettings Clone(ColorizeSettings settings)
+        {
+            if (settings == null)
+            {
+                return null;
+            }
+
+            return new ColorizeSettings
+            {
+                Enabled = settings.Enabled,
+                Color = settings.Color,
+                Strength = settings.Strength
+            };
+        }
+
         public static LiteEffectSettings FromResolved(ResolvedLiteEffectSettings resolved)
         {
             return new LiteEffectSettings
@@ -197,6 +213,12 @@ namespace Acfeel.UIToolkitLiteEffects
                     Jitter = resolved.Glitch.Jitter,
                     ColorShift = resolved.Glitch.ColorShift,
                     ScanlineStrength = resolved.Glitch.ScanlineStrength
+                },
+                Colorize = new ColorizeSettings
+                {
+                    Enabled = resolved.Colorize.Enabled,
+                    Color = resolved.Colorize.Color,
+                    Strength = resolved.Colorize.Strength
                 }
             };
         }
@@ -211,6 +233,7 @@ namespace Acfeel.UIToolkitLiteEffects
             ApplyBlur(merged, overlay?.Blur);
             ApplyDissolve(merged, overlay?.Dissolve);
             ApplyGlitch(merged, overlay?.Glitch);
+            ApplyColorize(merged, overlay?.Colorize);
             return merged;
         }
 
@@ -224,7 +247,8 @@ namespace Acfeel.UIToolkitLiteEffects
                 Glow = ExtractMasked(source?.Glow, mask?.Glow),
                 Blur = ExtractMasked(source?.Blur, mask?.Blur),
                 Dissolve = ExtractMasked(source?.Dissolve, mask?.Dissolve),
-                Glitch = ExtractMasked(source?.Glitch, mask?.Glitch)
+                Glitch = ExtractMasked(source?.Glitch, mask?.Glitch),
+                Colorize = ExtractMasked(source?.Colorize, mask?.Colorize)
             };
         }
 
@@ -238,7 +262,8 @@ namespace Acfeel.UIToolkitLiteEffects
                 Glow = LerpPartial(from?.Glow, to?.Glow, t),
                 Blur = LerpPartial(from?.Blur, to?.Blur, t),
                 Dissolve = LerpPartial(from?.Dissolve, to?.Dissolve, t),
-                Glitch = LerpPartial(from?.Glitch, to?.Glitch, t)
+                Glitch = LerpPartial(from?.Glitch, to?.Glitch, t),
+                Colorize = LerpPartial(from?.Colorize, to?.Colorize, t)
             };
         }
 
@@ -250,7 +275,33 @@ namespace Acfeel.UIToolkitLiteEffects
                 || HasAnyAssignedField(settings?.Glow)
                 || HasAnyAssignedField(settings?.Blur)
                 || HasAnyAssignedField(settings?.Dissolve)
-                || HasAnyAssignedField(settings?.Glitch);
+                || HasAnyAssignedField(settings?.Glitch)
+                || HasAnyAssignedField(settings?.Colorize);
+        }
+
+        private static void ApplyColorize(LiteEffectSettings destination, ColorizeSettings overlay)
+        {
+            if (overlay == null)
+            {
+                return;
+            }
+
+            destination.Colorize ??= new ColorizeSettings();
+
+            if (overlay.Enabled.HasValue)
+            {
+                destination.Colorize.Enabled = overlay.Enabled;
+            }
+
+            if (overlay.Color.HasValue)
+            {
+                destination.Colorize.Color = overlay.Color;
+            }
+
+            if (overlay.Strength.HasValue)
+            {
+                destination.Colorize.Strength = overlay.Strength;
+            }
         }
 
         private static void ApplyColorAdjust(LiteEffectSettings destination, ColorAdjustSettings overlay)
@@ -605,6 +656,21 @@ namespace Acfeel.UIToolkitLiteEffects
             };
         }
 
+        private static ColorizeSettings ExtractMasked(ColorizeSettings source, ColorizeSettings mask)
+        {
+            if (mask == null)
+            {
+                return null;
+            }
+
+            return new ColorizeSettings
+            {
+                Enabled = mask.Enabled.HasValue ? source?.Enabled : null,
+                Color = mask.Color.HasValue ? source?.Color : null,
+                Strength = mask.Strength.HasValue ? source?.Strength : null
+            };
+        }
+
         private static ColorAdjustSettings LerpPartial(ColorAdjustSettings from, ColorAdjustSettings to, float t)
         {
             if (from == null && to == null)
@@ -722,6 +788,21 @@ namespace Acfeel.UIToolkitLiteEffects
             };
         }
 
+        private static ColorizeSettings LerpPartial(ColorizeSettings from, ColorizeSettings to, float t)
+        {
+            if (from == null && to == null)
+            {
+                return null;
+            }
+
+            return new ColorizeSettings
+            {
+                Enabled = LerpBool(from?.Enabled, to?.Enabled, t),
+                Color = LerpColor(from?.Color, to?.Color, t),
+                Strength = LerpFloat(from?.Strength, to?.Strength, t)
+            };
+        }
+
         private static bool HasAnyAssignedField(ColorAdjustSettings settings)
         {
             return settings != null
@@ -788,6 +869,14 @@ namespace Acfeel.UIToolkitLiteEffects
                 || settings.Jitter.HasValue
                 || settings.ColorShift.HasValue
                 || settings.ScanlineStrength.HasValue);
+        }
+
+        private static bool HasAnyAssignedField(ColorizeSettings settings)
+        {
+            return settings != null
+                && (settings.Enabled.HasValue
+                || settings.Color.HasValue
+                || settings.Strength.HasValue);
         }
 
         private static float? LerpFloat(float? from, float? to, float t)

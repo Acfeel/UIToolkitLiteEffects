@@ -128,6 +128,18 @@ icon.SetGlitch(new GlitchSettings
 });
 ```
 
+### Colorize
+
+元の画像のアルファを保持しつつ、RGB を指定した一色に置き換えます。Strength=1 で完全に一色になり、0 に近づくほど元の色に戻ります。
+
+```csharp
+icon.SetColorize(new ColorizeSettings
+{
+    Color = Color.red,
+    Strength = 1f
+});
+```
+
 ### 明示的に無効化したい場合
 
 各エフェクト設定には `Enabled` があります。値が入ると自動で有効化される設計ですが、明示的に切りたい場合は `Enabled = false` を指定できます。
@@ -245,6 +257,8 @@ icon.EnableLiteEffectFromUss();
     --uitoolkitlitefx-glitch-jitter: 0.45;
     --uitoolkitlitefx-glitch-color-shift: 0.35;
     --uitoolkitlitefx-glitch-scanline-strength: 0.25;
+    --uitoolkitlitefx-colorize-color: rgba(255, 0, 0, 1);
+    --uitoolkitlitefx-colorize-strength: 1.0;
 }
 ```
 

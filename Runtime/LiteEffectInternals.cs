@@ -59,6 +59,9 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly int GlitchJitterId = Shader.PropertyToID("_GlitchJitter");
         private static readonly int GlitchColorShiftId = Shader.PropertyToID("_GlitchColorShift");
         private static readonly int GlitchScanlineStrengthId = Shader.PropertyToID("_GlitchScanlineStrength");
+        private static readonly int ColorizeEnabledId = Shader.PropertyToID("_ColorizeEnabled");
+        private static readonly int ColorizeColorId = Shader.PropertyToID("_ColorizeColor");
+        private static readonly int ColorizeStrengthId = Shader.PropertyToID("_ColorizeStrength");
         private static readonly int TimeId = Shader.PropertyToID("_LiteEffectTime");
         private static readonly int TexelSizeId = Shader.PropertyToID("_MainTexTexelSize");
         private static readonly int ContentUvRectId = Shader.PropertyToID("_ContentUvRect");
@@ -96,6 +99,9 @@ namespace Acfeel.UIToolkitLiteEffects
             material.SetFloat(GlitchJitterId, resolvedSettings.Glitch.Jitter);
             material.SetFloat(GlitchColorShiftId, resolvedSettings.Glitch.ColorShift);
             material.SetFloat(GlitchScanlineStrengthId, resolvedSettings.Glitch.ScanlineStrength);
+            material.SetFloat(ColorizeEnabledId, resolvedSettings.Colorize.Enabled ? 1f : 0f);
+            material.SetColor(ColorizeColorId, resolvedSettings.Colorize.Color);
+            material.SetFloat(ColorizeStrengthId, resolvedSettings.Colorize.Strength);
             material.SetFloat(TimeId, Time.unscaledTime);
             material.SetFloat(OutlineEnabledId, 0f); // Outline is rendered via overlay element, not the main shader pass
             material.SetVector(TexelSizeId, new Vector4(1f / processedTexture.width, 1f / processedTexture.height, processedTexture.width, processedTexture.height));

@@ -55,6 +55,9 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
             float _GlitchJitter;
             float _GlitchColorShift;
             float _GlitchScanlineStrength;
+            float _ColorizeEnabled;
+            float4 _ColorizeColor;
+            float _ColorizeStrength;
             float _LiteEffectTime;
             float4 _MainTexTexelSize;
             float4 _ContentUvRect;
@@ -331,6 +334,11 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 processed.rgb = ApplySaturation(processed.rgb, saturation);
                 processed *= _Multiply;
                 processed += _Add;
+
+                if (_ColorizeEnabled > 0.5)
+                {
+                    processed.rgb = lerp(processed.rgb, _ColorizeColor.rgb, _ColorizeStrength);
+                }
 
                 processed.rgb = saturate(processed.rgb);
                 processed.a = saturate(processed.a);

@@ -13,6 +13,7 @@ namespace Acfeel.UIToolkitLiteEffects
         public BlurSettings Blur;
         public DissolveSettings Dissolve;
         public GlitchSettings Glitch;
+        public ColorizeSettings Colorize;
     }
 
     [Serializable]
@@ -83,6 +84,14 @@ namespace Acfeel.UIToolkitLiteEffects
         public float? ScanlineStrength;
     }
 
+    [Serializable]
+    public sealed class ColorizeSettings
+    {
+        public bool? Enabled;
+        public Color? Color;
+        public float? Strength;
+    }
+
     public enum LiteEffectBlendMode
     {
         Replace = 0,
@@ -106,7 +115,8 @@ namespace Acfeel.UIToolkitLiteEffects
             ResolvedGlowSettings glow,
             ResolvedBlurSettings blur,
             ResolvedDissolveSettings dissolve,
-            ResolvedGlitchSettings glitch)
+            ResolvedGlitchSettings glitch,
+            ResolvedColorizeSettings colorize)
         {
             ColorAdjust = colorAdjust;
             Gradient = gradient;
@@ -115,6 +125,7 @@ namespace Acfeel.UIToolkitLiteEffects
             Blur = blur;
             Dissolve = dissolve;
             Glitch = glitch;
+            Colorize = colorize;
         }
 
         public ResolvedColorAdjustSettings ColorAdjust { get; }
@@ -131,6 +142,8 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public ResolvedGlitchSettings Glitch { get; }
 
+        public ResolvedColorizeSettings Colorize { get; }
+
         public bool HasAnyEffect =>
             ColorAdjust.Enabled
             || Gradient.Enabled
@@ -138,7 +151,8 @@ namespace Acfeel.UIToolkitLiteEffects
             || Glow.Enabled
             || Blur.Enabled
             || Dissolve.Enabled
-            || Glitch.Enabled;
+            || Glitch.Enabled
+            || Colorize.Enabled;
 
         public bool RequiresRealtimeRefresh => Glitch.Enabled && Glitch.Intensity > 0.0001f;
     }
@@ -277,6 +291,20 @@ namespace Acfeel.UIToolkitLiteEffects
         public float ScanlineStrength { get; }
     }
 
+    internal readonly struct ResolvedColorizeSettings
+    {
+        public ResolvedColorizeSettings(bool enabled, Color color, float strength)
+        {
+            Enabled = enabled;
+            Color = color;
+            Strength = strength;
+        }
+
+        public bool Enabled { get; }
+        public Color Color { get; }
+        public float Strength { get; }
+    }
+
     internal static class LiteEffectSettingsResolver
     {
         public static ResolvedLiteEffectSettings Resolve(LiteEffectSettings explicitSettings, LiteEffectSettings ussSettings)
@@ -288,7 +316,8 @@ namespace Acfeel.UIToolkitLiteEffects
             var blur = ResolveBlur(explicitSettings?.Blur, ussSettings?.Blur);
             var dissolve = ResolveDissolve(explicitSettings?.Dissolve, ussSettings?.Dissolve);
             var glitch = ResolveGlitch(explicitSettings?.Glitch, ussSettings?.Glitch);
-            return new ResolvedLiteEffectSettings(colorAdjust, gradient, outline, glow, blur, dissolve, glitch);
+            var colorize = ResolveColorize(explicitSettings?.Colorize, ussSettings?.Colorize);
+            return new ResolvedLiteEffectSettings(colorAdjust, gradient, outline, glow, blur, dissolve, glitch, colorize);
         }
 
         private static ResolvedColorAdjustSettings ResolveColorAdjust(ColorAdjustSettings explicitSettings, ColorAdjustSettings ussSettings)
@@ -388,6 +417,14 @@ namespace Acfeel.UIToolkitLiteEffects
                 ?? intensity > 0.0001f;
 
             return new ResolvedGlitchSettings(enabled, intensity, jitter, colorShift, scanlineStrength);
+        }
+
+        private static ResolvedColorizeSettings ResolveColorize(ColorizeSettings e, ColorizeSettings u)
+        {
+            var color = e?.Color ?? u?.Color ?? Color.white;
+            var strength = Mathf.Clamp01(e?.Strength ?? u?.Strength ?? 1f);
+            var enabled = e?.Enabled ?? u?.Enabled ?? ((e != null || u != null) && strength > 0.0001f);
+            return new ResolvedColorizeSettings(enabled, color, strength);
         }
 
         private static bool HasAnyAssignedField(GradientSettings settings)

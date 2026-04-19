@@ -135,6 +135,15 @@ namespace Acfeel.UIToolkitLiteEffects
             Refresh();
         }
 
+        public void SetColorize(ColorizeSettings settings)
+        {
+            tweenController.Kill(null, false, PromoteExplicitSettings);
+            explicitSettings ??= new LiteEffectSettings();
+            explicitSettings.Colorize = settings;
+            hasExplicitSettings = true;
+            Refresh();
+        }
+
         public void ClearExplicit()
         {
             tweenController.Kill(null, false, PromoteExplicitSettings);

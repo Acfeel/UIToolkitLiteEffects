@@ -30,6 +30,8 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly CustomStyleProperty<float> GlitchJitterProperty = new("--uitoolkitlitefx-glitch-jitter");
         private static readonly CustomStyleProperty<float> GlitchColorShiftProperty = new("--uitoolkitlitefx-glitch-color-shift");
         private static readonly CustomStyleProperty<float> GlitchScanlineStrengthProperty = new("--uitoolkitlitefx-glitch-scanline-strength");
+        private static readonly CustomStyleProperty<Color> ColorizeColorProperty = new("--uitoolkitlitefx-colorize-color");
+        private static readonly CustomStyleProperty<float> ColorizeStrengthProperty = new("--uitoolkitlitefx-colorize-strength");
 
         public static LiteEffectSettings Read(ICustomStyle customStyle)
         {
@@ -206,6 +208,22 @@ namespace Acfeel.UIToolkitLiteEffects
                 if (customStyle.TryGetValue(GlitchScanlineStrengthProperty, out glitchScanlineStrength))
                 {
                     settings.Glitch.ScanlineStrength = glitchScanlineStrength;
+                }
+            }
+
+            if (customStyle.TryGetValue(ColorizeColorProperty, out var colorizeColor)
+                || customStyle.TryGetValue(ColorizeStrengthProperty, out var colorizeStrength))
+            {
+                settings.Colorize = new ColorizeSettings();
+
+                if (customStyle.TryGetValue(ColorizeColorProperty, out colorizeColor))
+                {
+                    settings.Colorize.Color = colorizeColor;
+                }
+
+                if (customStyle.TryGetValue(ColorizeStrengthProperty, out colorizeStrength))
+                {
+                    settings.Colorize.Strength = colorizeStrength;
                 }
             }
 
