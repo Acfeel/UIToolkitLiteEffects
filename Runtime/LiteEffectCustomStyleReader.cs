@@ -239,7 +239,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
                 if (customStyle.TryGetValue(ColorizeColorProperty, out colorizeColor))
                 {
-                    settings.Colorize.Color = colorizeColor;
+                    settings.Colorize.Color = new Color(colorizeColor.r, colorizeColor.g, colorizeColor.b, 1f);
                 }
 
                 if (customStyle.TryGetValue(ColorizeStrengthProperty, out colorizeStrength))
