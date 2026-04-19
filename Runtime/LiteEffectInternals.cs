@@ -71,7 +71,7 @@ namespace Acfeel.UIToolkitLiteEffects
             var gradientRadians = resolvedSettings.Gradient.Angle * Mathf.Deg2Rad;
 
             material.SetTexture(MainTexId, inputTexture);
-            material.SetColor(BaseColorId, backgroundColor);
+            material.SetVector(BaseColorId, (Vector4)backgroundColor.linear);
             material.SetFloat(BrightnessId, resolvedSettings.ColorAdjust.Brightness);
             material.SetFloat(ContrastId, resolvedSettings.ColorAdjust.Contrast);
             material.SetFloat(SaturationId, resolvedSettings.ColorAdjust.Saturation);
