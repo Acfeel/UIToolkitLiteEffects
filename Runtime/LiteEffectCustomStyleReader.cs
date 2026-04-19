@@ -10,6 +10,8 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly CustomStyleProperty<float> ContrastProperty = new("--uitoolkitlitefx-contrast");
         private static readonly CustomStyleProperty<float> SaturationProperty = new("--uitoolkitlitefx-saturation");
         private static readonly CustomStyleProperty<float> HueProperty = new("--uitoolkitlitefx-hue");
+        private static readonly CustomStyleProperty<Color> MultiplyProperty = new("--uitoolkitlitefx-multiply");
+        private static readonly CustomStyleProperty<Color> AddProperty = new("--uitoolkitlitefx-add");
         private static readonly CustomStyleProperty<Color> GradientFromProperty = new("--uitoolkitlitefx-gradient-from");
         private static readonly CustomStyleProperty<Color> GradientToProperty = new("--uitoolkitlitefx-gradient-to");
         private static readonly CustomStyleProperty<float> GradientAngleProperty = new("--uitoolkitlitefx-gradient-angle");
@@ -41,7 +43,9 @@ namespace Acfeel.UIToolkitLiteEffects
             if (customStyle.TryGetValue(BrightnessProperty, out var brightness)
                 || customStyle.TryGetValue(ContrastProperty, out var contrast)
                 || customStyle.TryGetValue(SaturationProperty, out var saturation)
-                || customStyle.TryGetValue(HueProperty, out var hue))
+                || customStyle.TryGetValue(HueProperty, out var hue)
+                || customStyle.TryGetValue(MultiplyProperty, out var multiply)
+                || customStyle.TryGetValue(AddProperty, out var add))
             {
                 settings.ColorAdjust = new ColorAdjustSettings();
 
@@ -63,6 +67,16 @@ namespace Acfeel.UIToolkitLiteEffects
                 if (customStyle.TryGetValue(HueProperty, out hue))
                 {
                     settings.ColorAdjust.Hue = hue;
+                }
+
+                if (customStyle.TryGetValue(MultiplyProperty, out multiply))
+                {
+                    settings.ColorAdjust.Multiply = multiply;
+                }
+
+                if (customStyle.TryGetValue(AddProperty, out add))
+                {
+                    settings.ColorAdjust.Add = add;
                 }
             }
 
