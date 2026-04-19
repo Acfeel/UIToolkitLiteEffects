@@ -19,7 +19,6 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly CustomStyleProperty<float> GradientStrengthProperty = new("--uitoolkitlitefx-gradient-strength");
         private static readonly CustomStyleProperty<Color> OutlineColorProperty = new("--uitoolkitlitefx-outline-color");
         private static readonly CustomStyleProperty<float> OutlineThicknessProperty = new("--uitoolkitlitefx-outline-thickness");
-        private static readonly CustomStyleProperty<float> OutlineOpacityProperty = new("--uitoolkitlitefx-outline-opacity");
         private static readonly CustomStyleProperty<string> OutlineQualityProperty = new("--uitoolkitlitefx-outline-quality");
         private static readonly CustomStyleProperty<Color> GlowColorProperty = new("--uitoolkitlitefx-glow-color");
         private static readonly CustomStyleProperty<float> GlowStrengthProperty = new("--uitoolkitlitefx-glow-strength");
@@ -117,7 +116,6 @@ namespace Acfeel.UIToolkitLiteEffects
 
             if (customStyle.TryGetValue(OutlineColorProperty, out var outlineColor)
                 || customStyle.TryGetValue(OutlineThicknessProperty, out var outlineThickness)
-                || customStyle.TryGetValue(OutlineOpacityProperty, out var outlineOpacity)
                 || customStyle.TryGetValue(OutlineQualityProperty, out var outlineQualityText))
             {
                 settings.Outline = new OutlineSettings();
@@ -130,11 +128,6 @@ namespace Acfeel.UIToolkitLiteEffects
                 if (customStyle.TryGetValue(OutlineThicknessProperty, out outlineThickness))
                 {
                     settings.Outline.Thickness = outlineThickness;
-                }
-
-                if (customStyle.TryGetValue(OutlineOpacityProperty, out outlineOpacity))
-                {
-                    settings.Outline.Opacity = outlineOpacity;
                 }
 
                 if (customStyle.TryGetValue(OutlineQualityProperty, out outlineQualityText)

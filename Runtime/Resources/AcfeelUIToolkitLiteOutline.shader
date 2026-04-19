@@ -27,7 +27,6 @@ Shader "Hidden/Acfeel/UIToolkitLiteOutline"
             float4 _ContentUvRect;
             float4 _OutlineColor;
             float _OutlineThickness;
-            float _OutlineOpacity;
             float _OutlineSampleQuality;
             float _DissolveEnabled;
             float _DissolveAmount;
@@ -101,7 +100,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteOutline"
                     neighborAlpha = max(neighborAlpha, SampleAlpha(uv + float2(-diagonal.x, -diagonal.y)));
                 }
 
-                return saturate(neighborAlpha - sourceAlpha) * _OutlineOpacity * LiteEffectGetDissolveMask(uv, _DissolveEnabled, _DissolveAmount, _DissolveEdgeWidth);
+                return saturate(neighborAlpha - sourceAlpha) * LiteEffectGetDissolveMask(uv, _DissolveEnabled, _DissolveAmount, _DissolveEdgeWidth);
             }
 
             float4 frag(v2f i) : SV_Target

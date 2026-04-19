@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"/c/Main/GameProducts/Unity/MyGithubPackages/Assets/UIToolkitLiteEffects\" show f07654a:Runtime/LiteEffectController.cs)",
+      "Bash(git -C \"/c/Main/GameProducts/Unity/MyGithubPackages/Assets/UIToolkitLiteEffects\" status --short)",
+      "Bash(git -C \"/c/Main/GameProducts/Unity/MyGithubPackages/Assets/UIToolkitLiteEffects\" diff --stat)",
+      "Bash(git -C \"/c/Main/GameProducts/Unity/MyGithubPackages/Assets/UIToolkitLiteEffects\" diff)",
+      "Bash(git -C \"/c/Main/GameProducts/Unity/MyGithubPackages/Assets/UIToolkitLiteEffects\" add Runtime/LiteEffectController.cs Runtime/LiteEffectInternals.cs)",
+      "Bash(git -C \"/c/Main/GameProducts/Unity/MyGithubPackages/Assets/UIToolkitLiteEffects\" commit -m \"fix: Background Color適用時にエフェクトで色が明るくなる問題を修正\")",
+      "Bash(git -C \"/c/Main/GameProducts/Unity/MyGithubPackages/Assets/UIToolkitLiteEffects\" show --name-only --oneline -1)"
+    ]
+  }
+}
