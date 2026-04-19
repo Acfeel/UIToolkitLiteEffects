@@ -37,6 +37,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 Brightness = settings.Brightness,
                 Contrast = settings.Contrast,
                 Saturation = settings.Saturation,
+                Hue = settings.Hue,
                 Multiply = settings.Multiply,
                 Add = settings.Add
             };
@@ -166,6 +167,7 @@ namespace Acfeel.UIToolkitLiteEffects
                     Brightness = resolved.ColorAdjust.Brightness,
                     Contrast = resolved.ColorAdjust.Contrast,
                     Saturation = resolved.ColorAdjust.Saturation,
+                    Hue = resolved.ColorAdjust.Hue,
                     Multiply = resolved.ColorAdjust.Multiply,
                     Add = resolved.ColorAdjust.Add
                 },
@@ -331,6 +333,11 @@ namespace Acfeel.UIToolkitLiteEffects
             if (overlay.Saturation.HasValue)
             {
                 destination.ColorAdjust.Saturation = overlay.Saturation;
+            }
+
+            if (overlay.Hue.HasValue)
+            {
+                destination.ColorAdjust.Hue = overlay.Hue;
             }
 
             if (overlay.Multiply.HasValue)
@@ -552,6 +559,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 Brightness = mask.Brightness.HasValue ? source?.Brightness : null,
                 Contrast = mask.Contrast.HasValue ? source?.Contrast : null,
                 Saturation = mask.Saturation.HasValue ? source?.Saturation : null,
+                Hue = mask.Hue.HasValue ? source?.Hue : null,
                 Multiply = mask.Multiply.HasValue ? source?.Multiply : null,
                 Add = mask.Add.HasValue ? source?.Add : null
             };
@@ -684,6 +692,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 Brightness = LerpFloat(from?.Brightness, to?.Brightness, t),
                 Contrast = LerpFloat(from?.Contrast, to?.Contrast, t),
                 Saturation = LerpFloat(from?.Saturation, to?.Saturation, t),
+                Hue = LerpFloat(from?.Hue, to?.Hue, t),
                 Multiply = LerpColor(from?.Multiply, to?.Multiply, t),
                 Add = LerpColor(from?.Add, to?.Add, t)
             };
@@ -810,6 +819,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 || settings.Brightness.HasValue
                 || settings.Contrast.HasValue
                 || settings.Saturation.HasValue
+                || settings.Hue.HasValue
                 || settings.Multiply.HasValue
                 || settings.Add.HasValue);
         }

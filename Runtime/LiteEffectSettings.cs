@@ -23,6 +23,7 @@ namespace Acfeel.UIToolkitLiteEffects
         public float? Brightness;
         public float? Contrast;
         public float? Saturation;
+        public float? Hue;
         public Color? Multiply;
         public Color? Add;
     }
@@ -164,6 +165,7 @@ namespace Acfeel.UIToolkitLiteEffects
             float brightness,
             float contrast,
             float saturation,
+            float hue,
             Color multiply,
             Color add)
         {
@@ -171,6 +173,7 @@ namespace Acfeel.UIToolkitLiteEffects
             Brightness = brightness;
             Contrast = contrast;
             Saturation = saturation;
+            Hue = hue;
             Multiply = multiply;
             Add = add;
         }
@@ -179,6 +182,7 @@ namespace Acfeel.UIToolkitLiteEffects
         public float Brightness { get; }
         public float Contrast { get; }
         public float Saturation { get; }
+        public float Hue { get; }
         public Color Multiply { get; }
         public Color Add { get; }
     }
@@ -325,6 +329,7 @@ namespace Acfeel.UIToolkitLiteEffects
             var brightness = Mathf.Clamp01(explicitSettings?.Brightness ?? ussSettings?.Brightness ?? 0.5f);
             var contrast = Mathf.Clamp01(explicitSettings?.Contrast ?? ussSettings?.Contrast ?? 0.5f);
             var saturation = Mathf.Clamp01(explicitSettings?.Saturation ?? ussSettings?.Saturation ?? 0.5f);
+            var hue = Mathf.Clamp01(explicitSettings?.Hue ?? ussSettings?.Hue ?? 0.5f);
             var multiply = explicitSettings?.Multiply ?? ussSettings?.Multiply ?? Color.white;
             var add = explicitSettings?.Add ?? ussSettings?.Add ?? Color.clear;
             var enabled = explicitSettings?.Enabled
@@ -332,10 +337,11 @@ namespace Acfeel.UIToolkitLiteEffects
                 ?? (!Mathf.Approximately(brightness, 0.5f)
                 || !Mathf.Approximately(contrast, 0.5f)
                 || !Mathf.Approximately(saturation, 0.5f)
+                || !Mathf.Approximately(hue, 0.5f)
                 || multiply != Color.white
                 || add != Color.clear);
 
-            return new ResolvedColorAdjustSettings(enabled, brightness, contrast, saturation, multiply, add);
+            return new ResolvedColorAdjustSettings(enabled, brightness, contrast, saturation, hue, multiply, add);
         }
 
         private static ResolvedGradientSettings ResolveGradient(GradientSettings explicitSettings, GradientSettings ussSettings)

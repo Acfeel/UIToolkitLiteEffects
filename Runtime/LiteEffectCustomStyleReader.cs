@@ -9,6 +9,7 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly CustomStyleProperty<float> BrightnessProperty = new("--uitoolkitlitefx-brightness");
         private static readonly CustomStyleProperty<float> ContrastProperty = new("--uitoolkitlitefx-contrast");
         private static readonly CustomStyleProperty<float> SaturationProperty = new("--uitoolkitlitefx-saturation");
+        private static readonly CustomStyleProperty<float> HueProperty = new("--uitoolkitlitefx-hue");
         private static readonly CustomStyleProperty<Color> GradientFromProperty = new("--uitoolkitlitefx-gradient-from");
         private static readonly CustomStyleProperty<Color> GradientToProperty = new("--uitoolkitlitefx-gradient-to");
         private static readonly CustomStyleProperty<float> GradientAngleProperty = new("--uitoolkitlitefx-gradient-angle");
@@ -39,7 +40,8 @@ namespace Acfeel.UIToolkitLiteEffects
 
             if (customStyle.TryGetValue(BrightnessProperty, out var brightness)
                 || customStyle.TryGetValue(ContrastProperty, out var contrast)
-                || customStyle.TryGetValue(SaturationProperty, out var saturation))
+                || customStyle.TryGetValue(SaturationProperty, out var saturation)
+                || customStyle.TryGetValue(HueProperty, out var hue))
             {
                 settings.ColorAdjust = new ColorAdjustSettings();
 
@@ -56,6 +58,11 @@ namespace Acfeel.UIToolkitLiteEffects
                 if (customStyle.TryGetValue(SaturationProperty, out saturation))
                 {
                     settings.ColorAdjust.Saturation = saturation;
+                }
+
+                if (customStyle.TryGetValue(HueProperty, out hue))
+                {
+                    settings.ColorAdjust.Hue = hue;
                 }
             }
 

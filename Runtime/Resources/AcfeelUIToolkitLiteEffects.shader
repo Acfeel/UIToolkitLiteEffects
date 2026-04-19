@@ -27,6 +27,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
             float _Brightness;
             float _Contrast;
             float _Saturation;
+            float _Hue;
             float4 _Multiply;
             float4 _Add;
             float _GradientEnabled;
@@ -92,6 +93,63 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
             {
                 float luminance = dot(color, float3(0.2126, 0.7152, 0.0722));
                 return lerp(luminance.xxx, color, saturation);
+            }
+
+            float3 RgbToHsv(float3 rgb)
+            {
+                float maxC = max(rgb.r, max(rgb.g, rgb.b));
+                float minC = min(rgb.r, min(rgb.g, rgb.b));
+                float delta = maxC - minC;
+
+                float h = 0.0;
+                if (delta > 0.0001)
+                {
+                    if (maxC == rgb.r)
+                        h = mod((rgb.g - rgb.b) / delta, 6.0) / 6.0;
+                    else if (maxC == rgb.g)
+                        h = ((rgb.b - rgb.r) / delta + 2.0) / 6.0;
+                    else
+                        h = ((rgb.r - rgb.g) / delta + 4.0) / 6.0;
+                }
+
+                float s = maxC > 0.0001 ? delta / maxC : 0.0;
+                float v = maxC;
+
+                return float3(h, s, v);
+            }
+
+            float3 HsvToRgb(float3 hsv)
+            {
+                float h = hsv.x * 6.0;
+                float s = hsv.y;
+                float v = hsv.z;
+
+                float c = v * s;
+                float x = c * (1.0 - abs(mod(h, 2.0) - 1.0));
+                float m = v - c;
+
+                float3 rgb = float3(0.0, 0.0, 0.0);
+                if (h < 1.0)
+                    rgb = float3(c, x, 0.0);
+                else if (h < 2.0)
+                    rgb = float3(x, c, 0.0);
+                else if (h < 3.0)
+                    rgb = float3(0.0, c, x);
+                else if (h < 4.0)
+                    rgb = float3(0.0, x, c);
+                else if (h < 5.0)
+                    rgb = float3(x, 0.0, c);
+                else
+                    rgb = float3(c, 0.0, x);
+
+                return rgb + m.xxx;
+            }
+
+            float3 ApplyHue(float3 color, float hue)
+            {
+                float3 hsv = RgbToHsv(color);
+                hsv.x = frac(hsv.x + hue - 0.5);
+                return HsvToRgb(hsv);
             }
 
             float GetOutlineThicknessPixels(float normalizedThickness)
@@ -332,6 +390,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 processed.rgb += brightness;
                 processed.rgb = ApplyContrast(processed.rgb, contrast);
                 processed.rgb = ApplySaturation(processed.rgb, saturation);
+                processed.rgb = ApplyHue(processed.rgb, _Hue);
                 processed *= _Multiply;
                 processed += _Add;
 

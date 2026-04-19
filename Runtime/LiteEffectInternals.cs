@@ -34,6 +34,7 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
         private static readonly int ContrastId = Shader.PropertyToID("_Contrast");
         private static readonly int SaturationId = Shader.PropertyToID("_Saturation");
+        private static readonly int HueId = Shader.PropertyToID("_Hue");
         private static readonly int MultiplyId = Shader.PropertyToID("_Multiply");
         private static readonly int AddId = Shader.PropertyToID("_Add");
         private static readonly int GradientEnabledId = Shader.PropertyToID("_GradientEnabled");
@@ -75,6 +76,7 @@ namespace Acfeel.UIToolkitLiteEffects
             material.SetFloat(BrightnessId, resolvedSettings.ColorAdjust.Brightness);
             material.SetFloat(ContrastId, resolvedSettings.ColorAdjust.Contrast);
             material.SetFloat(SaturationId, resolvedSettings.ColorAdjust.Saturation);
+            material.SetFloat(HueId, resolvedSettings.ColorAdjust.Hue);
             material.SetColor(MultiplyId, resolvedSettings.ColorAdjust.Multiply);
             material.SetColor(AddId, resolvedSettings.ColorAdjust.Add);
             material.SetFloat(GradientEnabledId, resolvedSettings.Gradient.Enabled ? 1f : 0f);
