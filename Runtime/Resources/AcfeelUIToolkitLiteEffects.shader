@@ -348,7 +348,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 processed.rgb = ApplySaturation(processed.rgb, saturation);
                 processed.rgb = ApplyHue(processed.rgb, _Hue);
                 processed *= _Multiply;
-                processed += _Add * processed.a;
+                processed.rgb += _Add.rgb * processed.a;
 
                 if (_ColorizeEnabled > 0.5)
                 {
