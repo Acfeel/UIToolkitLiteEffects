@@ -1484,10 +1484,8 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             if (cornerRadii == Vector4.zero)
-                UnityEngine.Debug.Log($"[ElementOutlineRenderer] Using simple 16-vertex mesh (no rounded corners)");
-            else
-                UnityEngine.Debug.Log($"[ElementOutlineRenderer] Using GenerateRoundedRingMesh with cornerRadii={cornerRadii}");
             {
+                UnityEngine.Debug.Log($"[ElementOutlineRenderer] Using simple 16-vertex mesh (no rounded corners)");
                 var mesh = context.Allocate(16, 24, Texture2D.whiteTexture);
                 var vertices = new Vertex[16];
                 vertices[0] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, rect.yMin), Vector2.zero, outlineColor);
@@ -1517,6 +1515,7 @@ namespace Acfeel.UIToolkitLiteEffects
             }
             else
             {
+                UnityEngine.Debug.Log($"[ElementOutlineRenderer] Using GenerateRoundedRingMesh with cornerRadii={cornerRadii}");
                 var verts = new System.Collections.Generic.List<Vertex>();
                 var indices = new System.Collections.Generic.List<ushort>();
                 LiteEffectMeshUtility.GenerateRoundedRingMesh(rect, cornerRadii, thickness, 8, verts, indices, outlineColor);
