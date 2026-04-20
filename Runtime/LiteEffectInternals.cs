@@ -1470,6 +1470,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii)
         {
+            UnityEngine.Debug.Log($"[ElementOutlineRenderer.Generate] cornerRadii={cornerRadii}");
             if (outlineColor.a <= 0.0001f || thickness <= 0.0001f || rect.width <= 0f || rect.height <= 0f)
             {
                 return;
@@ -1483,6 +1484,9 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             if (cornerRadii == Vector4.zero)
+                UnityEngine.Debug.Log($"[ElementOutlineRenderer] Using simple 16-vertex mesh (no rounded corners)");
+            else
+                UnityEngine.Debug.Log($"[ElementOutlineRenderer] Using GenerateRoundedRingMesh with cornerRadii={cornerRadii}");
             {
                 var mesh = context.Allocate(16, 24, Texture2D.whiteTexture);
                 var vertices = new Vertex[16];
