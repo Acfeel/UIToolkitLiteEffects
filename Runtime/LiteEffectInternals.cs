@@ -32,6 +32,9 @@ namespace Acfeel.UIToolkitLiteEffects
                 return Vector4.zero;
 
             var rect = element.contentRect;
+            if (float.IsNaN(rect.width) || float.IsNaN(rect.height) || rect.width <= 0f || rect.height <= 0f)
+                return Vector4.zero;
+
             var maxRadius = Mathf.Min(rect.width, rect.height) * 0.5f;
 
             var tl = Mathf.Min(element.resolvedStyle.borderTopLeftRadius, maxRadius);

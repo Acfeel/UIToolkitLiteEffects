@@ -353,6 +353,15 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             var cornerRadii = LiteEffectMeshUtility.ReadBorderRadii(element);
+            if (cornerRadii == Vector4.zero && element != null)
+            {
+                var tl = element.resolvedStyle.borderTopLeftRadius;
+                var tr = element.resolvedStyle.borderTopRightRadius;
+                var br = element.resolvedStyle.borderBottomRightRadius;
+                var bl = element.resolvedStyle.borderBottomLeftRadius;
+                if (tl > 0.01f || tr > 0.01f || br > 0.01f || bl > 0.01f)
+                    UnityEngine.Debug.LogWarning($"[LiteEffectController] USS border-radius found but ReadBorderRadii returned zero! borderRadii=({tl}, {tr}, {br}, {bl})");
+            }
             outlineOverlayController.Update(
                 sourceTexture,
                 element.contentRect,
