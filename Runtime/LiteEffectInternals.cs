@@ -958,11 +958,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 outlineMaterial.SetFloat(DissolveEnabledId, dissolve.Enabled ? 1f : 0f);
                 outlineMaterial.SetFloat(DissolveAmountId, dissolve.Amount);
                 outlineMaterial.SetFloat(DissolveEdgeWidthId, dissolve.EdgeWidth);
-                activeOutlineRenderer.PrepareTexture(outlineMaterial, outlineTexture, sourceTexture, contentRect.size, targetSize, padding, outline);
-                var cornerRadiiId = Shader.PropertyToID("_CornerRadii");
-                var rectSizeId = Shader.PropertyToID("_RectSize");
-                outlineMaterial.SetVector(cornerRadiiId, cornerRadii);
-                outlineMaterial.SetVector(rectSizeId, new Vector4(contentRect.width, contentRect.height, padding, 0f));
+                activeOutlineRenderer.PrepareTexture(outlineMaterial, outlineTexture, sourceTexture, contentRect.size, targetSize, padding, outline, cornerRadii);
             }
             else
             {
@@ -1423,7 +1419,8 @@ namespace Acfeel.UIToolkitLiteEffects
             Vector2 contentSize,
             Vector2Int targetSize,
             int padding,
-            ResolvedOutlineSettings outline);
+            ResolvedOutlineSettings outline,
+            Vector4 cornerRadii);
 
         void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii);
     }
@@ -1446,7 +1443,8 @@ namespace Acfeel.UIToolkitLiteEffects
             Vector2 contentSize,
             Vector2Int targetSize,
             int padding,
-            ResolvedOutlineSettings outline)
+            ResolvedOutlineSettings outline,
+            Vector4 cornerRadii)
         {
         }
 
@@ -1537,7 +1535,8 @@ namespace Acfeel.UIToolkitLiteEffects
             Vector2 contentSize,
             Vector2Int targetSize,
             int padding,
-            ResolvedOutlineSettings outline)
+            ResolvedOutlineSettings outline,
+            Vector4 cornerRadii)
         {
             if (outlineMaterial == null || outlineTexture == null || sourceTexture == null)
             {
@@ -1559,6 +1558,8 @@ namespace Acfeel.UIToolkitLiteEffects
             outlineMaterial.SetFloat(OutlineSampleQualityId, outline.Quality == LiteEffectOutlineQuality.Low ? 0f : 1f);
             outlineMaterial.SetVector(TexelSizeId, new Vector4(1f / targetSize.x, 1f / targetSize.y, targetSize.x, targetSize.y));
             outlineMaterial.SetVector(ContentUvRectId, contentUvRect);
+            outlineMaterial.SetVector(CornerRadiiId, cornerRadii);
+            outlineMaterial.SetVector(RectSizeId, new Vector4(contentSize.x, contentSize.y, padding, 0f));
             Graphics.Blit(sourceTexture, outlineTexture, outlineMaterial);
         }
 
