@@ -129,7 +129,7 @@ Shader "Hidden/Acfeel/UIToolkitLiteOutline"
                 float2 contentCenter = contentSize * 0.5;
                 float2 localPos = contentPixelPos - contentCenter;
                 float cornerDist = SDFRoundedRect(localPos, contentSize, _CornerRadii);
-                float cornerMask = saturate(0.5 - cornerDist);
+                float cornerMask = step(0.0, -cornerDist);
 
                 return float4(_OutlineColor.rgb, mask * _OutlineColor.a * cornerMask);
             }
