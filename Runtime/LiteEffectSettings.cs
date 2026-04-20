@@ -26,6 +26,31 @@ namespace Acfeel.UIToolkitLiteEffects
         public float? Hue;
         public Color? Multiply;
         public Color? Add;
+
+        public ColorAdjustSettings Clone()
+        {
+            return new ColorAdjustSettings
+            {
+                Enabled = Enabled,
+                Brightness = Brightness,
+                Contrast = Contrast,
+                Saturation = Saturation,
+                Hue = Hue,
+                Multiply = Multiply,
+                Add = Add
+            };
+        }
+
+        public bool HasAnyAssignedField()
+        {
+            return Enabled.HasValue
+                || Brightness.HasValue
+                || Contrast.HasValue
+                || Saturation.HasValue
+                || Hue.HasValue
+                || Multiply.HasValue
+                || Add.HasValue;
+        }
     }
 
     [Serializable]
@@ -37,6 +62,29 @@ namespace Acfeel.UIToolkitLiteEffects
         public float? Angle;
         public LiteEffectBlendMode? Mode;
         public float? Strength;
+
+        public GradientSettings Clone()
+        {
+            return new GradientSettings
+            {
+                Enabled = Enabled,
+                From = From,
+                To = To,
+                Angle = Angle,
+                Mode = Mode,
+                Strength = Strength
+            };
+        }
+
+        public bool HasAnyAssignedField()
+        {
+            return Enabled.HasValue
+                || From.HasValue
+                || To.HasValue
+                || Angle.HasValue
+                || Mode.HasValue
+                || Strength.HasValue;
+        }
     }
 
     [Serializable]
@@ -47,6 +95,27 @@ namespace Acfeel.UIToolkitLiteEffects
         public float? Thickness;
         public float? Opacity;
         public LiteEffectOutlineQuality? Quality;
+
+        public OutlineSettings Clone()
+        {
+            return new OutlineSettings
+            {
+                Enabled = Enabled,
+                Color = Color,
+                Thickness = Thickness,
+                Opacity = Opacity,
+                Quality = Quality
+            };
+        }
+
+        public bool HasAnyAssignedField()
+        {
+            return Enabled.HasValue
+                || Color.HasValue
+                || Thickness.HasValue
+                || Opacity.HasValue
+                || Quality.HasValue;
+        }
     }
 
     [Serializable]
@@ -56,6 +125,25 @@ namespace Acfeel.UIToolkitLiteEffects
         public Color? Color;
         public float? Strength;
         public float? Spread;
+
+        public GlowSettings Clone()
+        {
+            return new GlowSettings
+            {
+                Enabled = Enabled,
+                Color = Color,
+                Strength = Strength,
+                Spread = Spread
+            };
+        }
+
+        public bool HasAnyAssignedField()
+        {
+            return Enabled.HasValue
+                || Color.HasValue
+                || Strength.HasValue
+                || Spread.HasValue;
+        }
     }
 
     [Serializable]
@@ -64,6 +152,23 @@ namespace Acfeel.UIToolkitLiteEffects
         public bool? Enabled;
         public float? Radius;
         public float? Strength;
+
+        public BlurSettings Clone()
+        {
+            return new BlurSettings
+            {
+                Enabled = Enabled,
+                Radius = Radius,
+                Strength = Strength
+            };
+        }
+
+        public bool HasAnyAssignedField()
+        {
+            return Enabled.HasValue
+                || Radius.HasValue
+                || Strength.HasValue;
+        }
     }
 
     [Serializable]
@@ -73,6 +178,25 @@ namespace Acfeel.UIToolkitLiteEffects
         public float? Amount;
         public float? EdgeWidth;
         public Color? EdgeColor;
+
+        public DissolveSettings Clone()
+        {
+            return new DissolveSettings
+            {
+                Enabled = Enabled,
+                Amount = Amount,
+                EdgeWidth = EdgeWidth,
+                EdgeColor = EdgeColor
+            };
+        }
+
+        public bool HasAnyAssignedField()
+        {
+            return Enabled.HasValue
+                || Amount.HasValue
+                || EdgeWidth.HasValue
+                || EdgeColor.HasValue;
+        }
     }
 
     [Serializable]
@@ -83,6 +207,27 @@ namespace Acfeel.UIToolkitLiteEffects
         public float? Jitter;
         public float? ColorShift;
         public float? ScanlineStrength;
+
+        public GlitchSettings Clone()
+        {
+            return new GlitchSettings
+            {
+                Enabled = Enabled,
+                Intensity = Intensity,
+                Jitter = Jitter,
+                ColorShift = ColorShift,
+                ScanlineStrength = ScanlineStrength
+            };
+        }
+
+        public bool HasAnyAssignedField()
+        {
+            return Enabled.HasValue
+                || Intensity.HasValue
+                || Jitter.HasValue
+                || ColorShift.HasValue
+                || ScanlineStrength.HasValue;
+        }
     }
 
     [Serializable]
@@ -91,6 +236,23 @@ namespace Acfeel.UIToolkitLiteEffects
         public bool? Enabled;
         public Color? Color;
         public float? Strength;
+
+        public ColorizeSettings Clone()
+        {
+            return new ColorizeSettings
+            {
+                Enabled = Enabled,
+                Color = Color,
+                Strength = Strength
+            };
+        }
+
+        public bool HasAnyAssignedField()
+        {
+            return Enabled.HasValue
+                || Color.HasValue
+                || Strength.HasValue;
+        }
     }
 
     public enum LiteEffectBlendMode
@@ -368,11 +530,11 @@ namespace Acfeel.UIToolkitLiteEffects
         {
             var color = explicitSettings?.Color ?? ussSettings?.Color ?? Color.black;
             var thickness = Mathf.Clamp01(explicitSettings?.Thickness ?? ussSettings?.Thickness ?? 0f);
-            var opacity = Mathf.Clamp01(explicitSettings?.Opacity ?? ussSettings?.Opacity ?? 0f);
+            var opacity = Mathf.Clamp01(explicitSettings?.Opacity ?? ussSettings?.Opacity ?? 1f);
             var quality = explicitSettings?.Quality ?? ussSettings?.Quality ?? LiteEffectOutlineQuality.Normal;
             var enabled = explicitSettings?.Enabled
                 ?? ussSettings?.Enabled
-                ?? (thickness > 0.0001f && opacity > 0.0001f);
+                ?? (thickness > 0.0001f);
 
             return new ResolvedOutlineSettings(enabled, color, thickness, opacity, quality);
         }

@@ -13,147 +13,14 @@ namespace Acfeel.UIToolkitLiteEffects
 
             return new LiteEffectSettings
             {
-                ColorAdjust = Clone(settings.ColorAdjust),
-                Gradient = Clone(settings.Gradient),
-                Outline = Clone(settings.Outline),
-                Glow = Clone(settings.Glow),
-                Blur = Clone(settings.Blur),
-                Dissolve = Clone(settings.Dissolve),
-                Glitch = Clone(settings.Glitch),
-                Colorize = Clone(settings.Colorize)
-            };
-        }
-
-        public static ColorAdjustSettings Clone(ColorAdjustSettings settings)
-        {
-            if (settings == null)
-            {
-                return null;
-            }
-
-            return new ColorAdjustSettings
-            {
-                Enabled = settings.Enabled,
-                Brightness = settings.Brightness,
-                Contrast = settings.Contrast,
-                Saturation = settings.Saturation,
-                Hue = settings.Hue,
-                Multiply = settings.Multiply,
-                Add = settings.Add
-            };
-        }
-
-        public static GradientSettings Clone(GradientSettings settings)
-        {
-            if (settings == null)
-            {
-                return null;
-            }
-
-            return new GradientSettings
-            {
-                Enabled = settings.Enabled,
-                From = settings.From,
-                To = settings.To,
-                Angle = settings.Angle,
-                Mode = settings.Mode,
-                Strength = settings.Strength
-            };
-        }
-
-        public static OutlineSettings Clone(OutlineSettings settings)
-        {
-            if (settings == null)
-            {
-                return null;
-            }
-
-            return new OutlineSettings
-            {
-                Enabled = settings.Enabled,
-                Color = settings.Color,
-                Thickness = settings.Thickness,
-                Opacity = settings.Opacity,
-                Quality = settings.Quality
-            };
-        }
-
-        public static GlowSettings Clone(GlowSettings settings)
-        {
-            if (settings == null)
-            {
-                return null;
-            }
-
-            return new GlowSettings
-            {
-                Enabled = settings.Enabled,
-                Color = settings.Color,
-                Strength = settings.Strength,
-                Spread = settings.Spread
-            };
-        }
-
-        public static BlurSettings Clone(BlurSettings settings)
-        {
-            if (settings == null)
-            {
-                return null;
-            }
-
-            return new BlurSettings
-            {
-                Enabled = settings.Enabled,
-                Radius = settings.Radius,
-                Strength = settings.Strength
-            };
-        }
-
-        public static DissolveSettings Clone(DissolveSettings settings)
-        {
-            if (settings == null)
-            {
-                return null;
-            }
-
-            return new DissolveSettings
-            {
-                Enabled = settings.Enabled,
-                Amount = settings.Amount,
-                EdgeWidth = settings.EdgeWidth,
-                EdgeColor = settings.EdgeColor
-            };
-        }
-
-        public static GlitchSettings Clone(GlitchSettings settings)
-        {
-            if (settings == null)
-            {
-                return null;
-            }
-
-            return new GlitchSettings
-            {
-                Enabled = settings.Enabled,
-                Intensity = settings.Intensity,
-                Jitter = settings.Jitter,
-                ColorShift = settings.ColorShift,
-                ScanlineStrength = settings.ScanlineStrength
-            };
-        }
-
-        public static ColorizeSettings Clone(ColorizeSettings settings)
-        {
-            if (settings == null)
-            {
-                return null;
-            }
-
-            return new ColorizeSettings
-            {
-                Enabled = settings.Enabled,
-                Color = settings.Color,
-                Strength = settings.Strength
+                ColorAdjust = settings.ColorAdjust?.Clone(),
+                Gradient = settings.Gradient?.Clone(),
+                Outline = settings.Outline?.Clone(),
+                Glow = settings.Glow?.Clone(),
+                Blur = settings.Blur?.Clone(),
+                Dissolve = settings.Dissolve?.Clone(),
+                Glitch = settings.Glitch?.Clone(),
+                Colorize = settings.Colorize?.Clone()
             };
         }
 
@@ -271,14 +138,14 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public static bool HasAnyAssignedField(LiteEffectSettings settings)
         {
-            return HasAnyAssignedField(settings?.ColorAdjust)
-                || HasAnyAssignedField(settings?.Gradient)
-                || HasAnyAssignedField(settings?.Outline)
-                || HasAnyAssignedField(settings?.Glow)
-                || HasAnyAssignedField(settings?.Blur)
-                || HasAnyAssignedField(settings?.Dissolve)
-                || HasAnyAssignedField(settings?.Glitch)
-                || HasAnyAssignedField(settings?.Colorize);
+            return (settings?.ColorAdjust?.HasAnyAssignedField() ?? false)
+                || (settings?.Gradient?.HasAnyAssignedField() ?? false)
+                || (settings?.Outline?.HasAnyAssignedField() ?? false)
+                || (settings?.Glow?.HasAnyAssignedField() ?? false)
+                || (settings?.Blur?.HasAnyAssignedField() ?? false)
+                || (settings?.Dissolve?.HasAnyAssignedField() ?? false)
+                || (settings?.Glitch?.HasAnyAssignedField() ?? false)
+                || (settings?.Colorize?.HasAnyAssignedField() ?? false);
         }
 
         private static void ApplyColorize(LiteEffectSettings destination, ColorizeSettings overlay)
@@ -810,83 +677,6 @@ namespace Acfeel.UIToolkitLiteEffects
                 Color = LerpColor(from?.Color, to?.Color, t),
                 Strength = LerpFloat(from?.Strength, to?.Strength, t)
             };
-        }
-
-        private static bool HasAnyAssignedField(ColorAdjustSettings settings)
-        {
-            return settings != null
-                && (settings.Enabled.HasValue
-                || settings.Brightness.HasValue
-                || settings.Contrast.HasValue
-                || settings.Saturation.HasValue
-                || settings.Hue.HasValue
-                || settings.Multiply.HasValue
-                || settings.Add.HasValue);
-        }
-
-        private static bool HasAnyAssignedField(GradientSettings settings)
-        {
-            return settings != null
-                && (settings.Enabled.HasValue
-                || settings.From.HasValue
-                || settings.To.HasValue
-                || settings.Angle.HasValue
-                || settings.Mode.HasValue
-                || settings.Strength.HasValue);
-        }
-
-        private static bool HasAnyAssignedField(OutlineSettings settings)
-        {
-            return settings != null
-                && (settings.Enabled.HasValue
-                || settings.Color.HasValue
-                || settings.Thickness.HasValue
-                || settings.Opacity.HasValue
-                || settings.Quality.HasValue);
-        }
-
-        private static bool HasAnyAssignedField(GlowSettings settings)
-        {
-            return settings != null
-                && (settings.Enabled.HasValue
-                || settings.Color.HasValue
-                || settings.Strength.HasValue
-                || settings.Spread.HasValue);
-        }
-
-        private static bool HasAnyAssignedField(BlurSettings settings)
-        {
-            return settings != null
-                && (settings.Enabled.HasValue
-                || settings.Radius.HasValue
-                || settings.Strength.HasValue);
-        }
-
-        private static bool HasAnyAssignedField(DissolveSettings settings)
-        {
-            return settings != null
-                && (settings.Enabled.HasValue
-                || settings.Amount.HasValue
-                || settings.EdgeWidth.HasValue
-                || settings.EdgeColor.HasValue);
-        }
-
-        private static bool HasAnyAssignedField(GlitchSettings settings)
-        {
-            return settings != null
-                && (settings.Enabled.HasValue
-                || settings.Intensity.HasValue
-                || settings.Jitter.HasValue
-                || settings.ColorShift.HasValue
-                || settings.ScanlineStrength.HasValue);
-        }
-
-        private static bool HasAnyAssignedField(ColorizeSettings settings)
-        {
-            return settings != null
-                && (settings.Enabled.HasValue
-                || settings.Color.HasValue
-                || settings.Strength.HasValue);
         }
 
         private static float? LerpFloat(float? from, float? to, float t)
