@@ -37,10 +37,26 @@ namespace Acfeel.UIToolkitLiteEffects
 
             var maxRadius = Mathf.Min(rect.width, rect.height) * 0.5f;
 
-            var tl = Mathf.Min(element.resolvedStyle.borderTopLeftRadius, maxRadius);
-            var tr = Mathf.Min(element.resolvedStyle.borderTopRightRadius, maxRadius);
-            var br = Mathf.Min(element.resolvedStyle.borderBottomRightRadius, maxRadius);
-            var bl = Mathf.Min(element.resolvedStyle.borderBottomLeftRadius, maxRadius);
+            // Try resolvedStyle first, fallback to inline style if not resolved
+            var tl = element.resolvedStyle.borderTopLeftRadius;
+            var tr = element.resolvedStyle.borderTopRightRadius;
+            var br = element.resolvedStyle.borderBottomRightRadius;
+            var bl = element.resolvedStyle.borderBottomLeftRadius;
+
+            // If resolvedStyle is zero, check inline style
+            if (tl <= 0.01f && element.style.borderTopLeftRadius != StyleKeyword.Null && element.style.borderTopLeftRadius != StyleKeyword.Undefined)
+                tl = element.style.borderTopLeftRadius.value.value;
+            if (tr <= 0.01f && element.style.borderTopRightRadius != StyleKeyword.Null && element.style.borderTopRightRadius != StyleKeyword.Undefined)
+                tr = element.style.borderTopRightRadius.value.value;
+            if (br <= 0.01f && element.style.borderBottomRightRadius != StyleKeyword.Null && element.style.borderBottomRightRadius != StyleKeyword.Undefined)
+                br = element.style.borderBottomRightRadius.value.value;
+            if (bl <= 0.01f && element.style.borderBottomLeftRadius != StyleKeyword.Null && element.style.borderBottomLeftRadius != StyleKeyword.Undefined)
+                bl = element.style.borderBottomLeftRadius.value.value;
+
+            tl = Mathf.Min(tl, maxRadius);
+            tr = Mathf.Min(tr, maxRadius);
+            br = Mathf.Min(br, maxRadius);
+            bl = Mathf.Min(bl, maxRadius);
 
             return new Vector4(tl, tr, br, bl);
         }
@@ -1589,6 +1605,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 var verts = new System.Collections.Generic.List<Vertex>();
                 var indices = new System.Collections.Generic.List<ushort>();
                 LiteEffectMeshUtility.GenerateRoundedRectMesh(rect, cornerRadii, 8, verts, indices, Color.white);
+                UnityEngine.Debug.Log($"[OutlineRenderer] Rounded mesh: {verts.Count} verts, cornerRadii={cornerRadii}");
 
                 if (verts.Count > 0 && indices.Count > 0)
                 {

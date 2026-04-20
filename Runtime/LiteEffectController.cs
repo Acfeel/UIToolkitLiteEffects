@@ -353,6 +353,9 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             var cornerRadii = LiteEffectMeshUtility.ReadBorderRadii(element);
+            UnityEngine.Debug.Log($"[LiteEffectController] cornerRadii={cornerRadii}, element.name={element.name}");
+            if (cornerRadii != Vector4.zero)
+                UnityEngine.Debug.Log($"  borderRadii values: TL={element.resolvedStyle.borderTopLeftRadius}, TR={element.resolvedStyle.borderTopRightRadius}, BR={element.resolvedStyle.borderBottomRightRadius}, BL={element.resolvedStyle.borderBottomLeftRadius}");
             outlineOverlayController.Update(
                 sourceTexture,
                 element.contentRect,
