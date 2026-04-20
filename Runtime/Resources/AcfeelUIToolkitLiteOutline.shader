@@ -31,6 +31,8 @@ Shader "Hidden/Acfeel/UIToolkitLiteOutline"
             float _DissolveEnabled;
             float _DissolveAmount;
             float _DissolveEdgeWidth;
+            float4 _CornerRadii;
+            float4 _RectSize;
 
             struct appdata
             {
@@ -50,6 +52,16 @@ Shader "Hidden/Acfeel/UIToolkitLiteOutline"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 return o;
+            }
+
+            float SDFRoundedRect(float2 p, float2 size, float4 radii)
+            {
+                float2 c = abs(p) - size * 0.5;
+                float radius = (p.x > 0.0)
+                    ? ((p.y > 0.0) ? radii.z : radii.y)
+                    : ((p.y > 0.0) ? radii.w : radii.x);
+                float2 q = c + radius;
+                return min(max(c.x, c.y), 0.0) + length(max(q, 0.0)) - radius;
             }
 
             bool IsInsideContent(float2 uv)
@@ -107,7 +119,19 @@ Shader "Hidden/Acfeel/UIToolkitLiteOutline"
             {
                 float mask = GetOutlineMask(i.uv);
                 clip(mask - 0.001);
-                return float4(_OutlineColor.rgb, mask * _OutlineColor.a);
+
+                // Apply rounded corner mask
+                // Note: overlay is padded, so adjust pixel position by padding offset
+                float2 pixelPos = i.uv * _MainTexTexelSize.zw;
+                float2 contentSize = _RectSize.xy;
+                float padding = _RectSize.z;
+                float2 contentPixelPos = pixelPos - padding;
+                float2 contentCenter = contentSize * 0.5;
+                float2 localPos = contentPixelPos - contentCenter;
+                float cornerDist = SDFRoundedRect(localPos, contentSize, _CornerRadii);
+                float cornerMask = saturate(0.5 - cornerDist);
+
+                return float4(_OutlineColor.rgb, mask * _OutlineColor.a * cornerMask);
             }
             ENDHLSL
         }

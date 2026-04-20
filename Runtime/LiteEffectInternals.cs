@@ -25,6 +25,241 @@ namespace Acfeel.UIToolkitLiteEffects
                 tint = tint
             };
         }
+
+        public static Vector4 ReadBorderRadii(VisualElement element)
+        {
+            if (element == null)
+                return Vector4.zero;
+
+            var rect = element.contentRect;
+            var maxRadius = Mathf.Min(rect.width, rect.height) * 0.5f;
+
+            var tl = Mathf.Min(element.resolvedStyle.borderTopLeftRadius, maxRadius);
+            var tr = Mathf.Min(element.resolvedStyle.borderTopRightRadius, maxRadius);
+            var br = Mathf.Min(element.resolvedStyle.borderBottomRightRadius, maxRadius);
+            var bl = Mathf.Min(element.resolvedStyle.borderBottomLeftRadius, maxRadius);
+
+            return new Vector4(tl, tr, br, bl);
+        }
+
+        public static int CountRoundedRectVertices(Vector4 radii, int segmentsPerCorner)
+        {
+            if (radii == Vector4.zero)
+                return 0;
+
+            int count = 1; // center vertex
+            count += (radii.x > 0 ? segmentsPerCorner + 1 : 1) + (radii.y > 0 ? segmentsPerCorner + 1 : 1) +
+                     (radii.z > 0 ? segmentsPerCorner + 1 : 1) + (radii.w > 0 ? segmentsPerCorner + 1 : 1);
+            return count;
+        }
+
+        public static void GenerateRoundedRectMesh(Rect rect, Vector4 radii, int segmentsPerCorner,
+            System.Collections.Generic.List<Vertex> vertsOut, System.Collections.Generic.List<ushort> indicesOut, Color tint)
+        {
+            vertsOut.Clear();
+            indicesOut.Clear();
+
+            var centerX = rect.xMin + rect.width * 0.5f;
+            var centerY = rect.yMin + rect.height * 0.5f;
+            var centerVert = CreateTintedVertex(new Vector2(centerX, centerY), Vector2.one * 0.5f, tint);
+            vertsOut.Add(centerVert);
+
+            var boundaryPoints = new System.Collections.Generic.List<Vector2>();
+            var cornerSegments = new System.Collections.Generic.List<Vector2>();
+
+            // Build boundary vertices going clockwise: top → right → bottom → left → back to top
+            // Top edge
+            boundaryPoints.Add(new Vector2(rect.xMin + radii.x, rect.yMin));
+            boundaryPoints.Add(new Vector2(rect.xMax - radii.y, rect.yMin));
+
+            // Top-right corner
+            GenerateCornerArc(rect, radii.y, 1, segmentsPerCorner, cornerSegments);
+            for (int i = 1; i < cornerSegments.Count; i++) // skip first point (already added as edge end)
+                boundaryPoints.Add(cornerSegments[i]);
+
+            // Right edge
+            boundaryPoints.Add(new Vector2(rect.xMax, rect.yMin + radii.y));
+            boundaryPoints.Add(new Vector2(rect.xMax, rect.yMax - radii.z));
+
+            // Bottom-right corner
+            cornerSegments.Clear();
+            GenerateCornerArc(rect, radii.z, 2, segmentsPerCorner, cornerSegments);
+            for (int i = 1; i < cornerSegments.Count; i++)
+                boundaryPoints.Add(cornerSegments[i]);
+
+            // Bottom edge
+            boundaryPoints.Add(new Vector2(rect.xMax - radii.z, rect.yMax));
+            boundaryPoints.Add(new Vector2(rect.xMin + radii.w, rect.yMax));
+
+            // Bottom-left corner
+            cornerSegments.Clear();
+            GenerateCornerArc(rect, radii.w, 3, segmentsPerCorner, cornerSegments);
+            for (int i = 1; i < cornerSegments.Count; i++)
+                boundaryPoints.Add(cornerSegments[i]);
+
+            // Left edge
+            boundaryPoints.Add(new Vector2(rect.xMin, rect.yMax - radii.w));
+            boundaryPoints.Add(new Vector2(rect.xMin, rect.yMin + radii.x));
+
+            // Top-left corner
+            cornerSegments.Clear();
+            GenerateCornerArc(rect, radii.x, 0, segmentsPerCorner, cornerSegments);
+            for (int i = 1; i < cornerSegments.Count; i++)
+                boundaryPoints.Add(cornerSegments[i]);
+
+            // Convert boundary points to vertices and create fan triangulation
+            var centerIdx = (ushort)0;
+            for (int i = 0; i < boundaryPoints.Count; i++)
+            {
+                var point = boundaryPoints[i];
+                var uv = new Vector2((point.x - rect.xMin) / rect.width, (point.y - rect.yMin) / rect.height);
+                vertsOut.Add(CreateTintedVertex(point, uv, tint));
+            }
+
+            // Create triangles from center to boundary
+            for (int i = 0; i < boundaryPoints.Count; i++)
+            {
+                var next = (i + 1) % boundaryPoints.Count;
+                indicesOut.Add(centerIdx);
+                indicesOut.Add((ushort)(i + 1));
+                indicesOut.Add((ushort)(next + 1));
+            }
+        }
+
+        private static void GenerateCornerArc(Rect rect, float radius, int cornerIndex, int segments,
+            System.Collections.Generic.List<Vector2> points)
+        {
+            points.Clear();
+            if (radius <= 0.0001f)
+            {
+                var corner = GetCornerPoint(rect, cornerIndex);
+                points.Add(corner);
+                return;
+            }
+
+            // Generate arc points for each corner with explicit angle ranges
+            // cornerIndex: 0=TL, 1=TR, 2=BR, 3=BL
+            Vector2 cornerCenter = Vector2.zero;
+            float startAngle = 0f;
+            float endAngle = 0f;
+
+            if (cornerIndex == 0) // TL: top-left (last in boundary, goes from left edge back to top edge)
+            {
+                cornerCenter = new Vector2(rect.xMin + radius, rect.yMin + radius);
+                startAngle = Mathf.PI; // 180° (pointing left)
+                endAngle = Mathf.PI * 1.5f; // 270° (pointing up)
+            }
+            else if (cornerIndex == 1) // TR: top-right (goes from top edge to right edge)
+            {
+                cornerCenter = new Vector2(rect.xMax - radius, rect.yMin + radius);
+                startAngle = Mathf.PI * 1.5f; // 270° (pointing up)
+                endAngle = 0f; // 0° (pointing right)
+            }
+            else if (cornerIndex == 2) // BR: bottom-right (goes from right edge to bottom edge)
+            {
+                cornerCenter = new Vector2(rect.xMax - radius, rect.yMax - radius);
+                startAngle = 0f; // 0° (pointing right)
+                endAngle = Mathf.PI * 0.5f; // 90° (pointing down)
+            }
+            else // BL: bottom-left (goes from bottom edge to left edge)
+            {
+                cornerCenter = new Vector2(rect.xMin + radius, rect.yMax - radius);
+                startAngle = Mathf.PI * 0.5f; // 90° (pointing down)
+                endAngle = Mathf.PI; // 180° (pointing left)
+            }
+
+            // Generate arc by interpolating the angle
+            // Handle angle wrapping to take the short path
+            float adjustedEndAngle = endAngle;
+            if (adjustedEndAngle < startAngle)
+                adjustedEndAngle += Mathf.PI * 2f;
+
+            for (int i = 0; i <= segments; i++)
+            {
+                float t = (float)i / segments;
+                float angle = Mathf.Lerp(startAngle, adjustedEndAngle, t);
+                float x = cornerCenter.x + radius * Mathf.Cos(angle);
+                float y = cornerCenter.y + radius * Mathf.Sin(angle);
+                points.Add(new Vector2(x, y));
+            }
+        }
+
+        private static Vector2 GetCornerPoint(Rect rect, int cornerIndex)
+        {
+            if (cornerIndex == 0) return new Vector2(rect.xMin, rect.yMin);
+            if (cornerIndex == 1) return new Vector2(rect.xMax, rect.yMin);
+            if (cornerIndex == 2) return new Vector2(rect.xMax, rect.yMax);
+            return new Vector2(rect.xMin, rect.yMax);
+        }
+
+        private static void AppendCornerVertices(System.Collections.Generic.List<Vector2> cornerPoints, Rect rect,
+            System.Collections.Generic.List<Vertex> vertsOut, System.Collections.Generic.List<ushort> indicesOut, Color tint)
+        {
+            var centerIdx = (ushort)0;
+            var baseIdx = (ushort)vertsOut.Count;
+
+            foreach (var point in cornerPoints)
+            {
+                var uv = new Vector2((point.x - rect.xMin) / rect.width, (point.y - rect.yMin) / rect.height);
+                vertsOut.Add(CreateTintedVertex(point, uv, tint));
+            }
+
+            for (int i = 0; i < cornerPoints.Count - 1; i++)
+            {
+                indicesOut.Add(centerIdx);
+                indicesOut.Add((ushort)(baseIdx + i));
+                indicesOut.Add((ushort)(baseIdx + i + 1));
+            }
+        }
+
+        public static void GenerateRoundedRingMesh(Rect outer, Vector4 outerRadii, float thickness, int segmentsPerCorner,
+            System.Collections.Generic.List<Vertex> vertsOut, System.Collections.Generic.List<ushort> indicesOut, Color tint)
+        {
+            vertsOut.Clear();
+            indicesOut.Clear();
+
+            var t = thickness;
+            var inner = new Rect(t, t, outer.width - t * 2f, outer.height - t * 2f);
+            if (inner.width <= 0f || inner.height <= 0f)
+                return;
+
+            var innerRadii = new Vector4(
+                Mathf.Max(0, outerRadii.x - thickness),
+                Mathf.Max(0, outerRadii.y - thickness),
+                Mathf.Max(0, outerRadii.z - thickness),
+                Mathf.Max(0, outerRadii.w - thickness)
+            );
+
+            var outerVerts = new System.Collections.Generic.List<Vertex>();
+            var innerVerts = new System.Collections.Generic.List<Vertex>();
+            var tempIndices = new System.Collections.Generic.List<ushort>();
+
+            GenerateRoundedRectMesh(outer, outerRadii, segmentsPerCorner, outerVerts, tempIndices, tint);
+            GenerateRoundedRectMesh(inner, innerRadii, segmentsPerCorner, innerVerts, tempIndices, tint);
+
+            // Merge rings: outer (skip center) + inner (skip center)
+            var baseOuter = (ushort)vertsOut.Count;
+            for (int i = 1; i < outerVerts.Count; i++)
+                vertsOut.Add(outerVerts[i]);
+
+            var baseInner = (ushort)vertsOut.Count;
+            for (int i = 1; i < innerVerts.Count; i++)
+                vertsOut.Add(innerVerts[i]);
+
+            // Tri-strip between outer and inner loops
+            int outerCount = outerVerts.Count - 1;
+            int innerCount = innerVerts.Count - 1;
+            for (int i = 0; i < outerCount; i++)
+            {
+                var next = (i + 1) % outerCount;
+                indicesOut.Add((ushort)(baseOuter + i));
+                indicesOut.Add((ushort)(baseOuter + next));
+                indicesOut.Add((ushort)(baseInner + i));
+                indicesOut.Add((ushort)(baseOuter + next));
+                indicesOut.Add((ushort)(baseInner + next));
+                indicesOut.Add((ushort)(baseInner + i));
+            }
+        }
     }
 
     internal static class LiteEffectMaterialBinder
@@ -646,6 +881,7 @@ namespace Acfeel.UIToolkitLiteEffects
         private Color outlineOverlayColor = Color.clear;
         private float outlineOverlayThickness;
         private IOutlineRenderer activeOutlineRenderer;
+        private Vector4 cornerRadii = Vector4.zero;
 
         public LiteEffectOutlineOverlayController(VisualElement element)
         {
@@ -655,7 +891,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public bool IsVisible { get; private set; }
 
-        public void Update(Texture sourceTexture, Rect contentRect, ResolvedOutlineSettings outline, ResolvedDissolveSettings dissolve, float opacity, Visibility visibility, DisplayStyle display)
+        public void Update(Texture sourceTexture, Rect contentRect, ResolvedOutlineSettings outline, ResolvedDissolveSettings dissolve, float opacity, Visibility visibility, DisplayStyle display, Vector4 radii = default)
         {
             if (!outline.Enabled || outline.Opacity <= 0.0001f || outline.Thickness <= 0.0001f || contentRect.width <= 0f || contentRect.height <= 0f)
             {
@@ -675,6 +911,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
+            cornerRadii = radii;
             activeOutlineRenderer = sourceTexture != null ? TransparentImageOutlineRenderer.Instance : ElementOutlineRenderer.Instance;
             var dissolveFade = LiteEffectDissolveUtility.GetFlatFade(dissolve);
             var padding = activeOutlineRenderer.GetPadding(outline);
@@ -722,6 +959,10 @@ namespace Acfeel.UIToolkitLiteEffects
                 outlineMaterial.SetFloat(DissolveAmountId, dissolve.Amount);
                 outlineMaterial.SetFloat(DissolveEdgeWidthId, dissolve.EdgeWidth);
                 activeOutlineRenderer.PrepareTexture(outlineMaterial, outlineTexture, sourceTexture, contentRect.size, targetSize, padding, outline);
+                var cornerRadiiId = Shader.PropertyToID("_CornerRadii");
+                var rectSizeId = Shader.PropertyToID("_RectSize");
+                outlineMaterial.SetVector(cornerRadiiId, cornerRadii);
+                outlineMaterial.SetVector(rectSizeId, new Vector4(contentRect.width, contentRect.height, padding, 0f));
             }
             else
             {
@@ -785,7 +1026,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            activeOutlineRenderer.Generate(context, outlineOverlayElement.contentRect, outlineTexture, outlineOverlayColor, outlineOverlayThickness);
+            activeOutlineRenderer.Generate(context, outlineOverlayElement.contentRect, outlineTexture, outlineOverlayColor, outlineOverlayThickness, cornerRadii);
         }
 
         private void EnsureOverlayElement()
@@ -909,6 +1150,8 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly int DissolveEdgeWidthId = Shader.PropertyToID("_DissolveEdgeWidth");
         private static readonly int TexelSizeId = Shader.PropertyToID("_MainTexTexelSize");
         private static readonly int ContentUvRectId = Shader.PropertyToID("_ContentUvRect");
+        private static readonly int CornerRadiiId = Shader.PropertyToID("_CornerRadii");
+        private static readonly int RectSizeId = Shader.PropertyToID("_RectSize");
 
         private readonly VisualElement element;
         private readonly Shader glowShader;
@@ -917,6 +1160,7 @@ namespace Acfeel.UIToolkitLiteEffects
         private RenderTexture glowTexture;
         private Material glowMaterial;
         private Vector2Int glowTextureSize;
+        private Vector4 cornerRadii = Vector4.zero;
 
         public LiteEffectGlowOverlayController(VisualElement element)
         {
@@ -934,7 +1178,8 @@ namespace Acfeel.UIToolkitLiteEffects
             ResolvedGlowSettings glow,
             float opacity,
             Visibility visibility,
-            DisplayStyle display)
+            DisplayStyle display,
+            Vector4 radii = default)
         {
             if (!glow.Enabled || glow.Strength <= 0.0001f || glow.Spread <= 0.0001f || contentRect.width <= 0f || contentRect.height <= 0f)
             {
@@ -961,6 +1206,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
+            cornerRadii = radii;
             var glowSpreadPixels = LiteEffectNormalizedRange.ToGlowSpreadPixels(glow.Spread);
             var padding = Mathf.CeilToInt(Mathf.Max(2f, glowSpreadPixels * 3f));
             var targetSize = new Vector2Int(
@@ -1004,6 +1250,8 @@ namespace Acfeel.UIToolkitLiteEffects
             glowMaterial.SetFloat(DissolveEdgeWidthId, dissolve.EdgeWidth);
             glowMaterial.SetVector(TexelSizeId, new Vector4(1f / targetSize.x, 1f / targetSize.y, targetSize.x, targetSize.y));
             glowMaterial.SetVector(ContentUvRectId, contentUvRect);
+            glowMaterial.SetVector(CornerRadiiId, cornerRadii);
+            glowMaterial.SetVector(RectSizeId, new Vector4(contentRect.width, contentRect.height, padding, 0f));
             Graphics.Blit(glowSourceTexture, glowTexture, glowMaterial);
 
             glowOverlayElement.style.backgroundImage = Background.FromRenderTexture(glowTexture);
@@ -1177,7 +1425,7 @@ namespace Acfeel.UIToolkitLiteEffects
             int padding,
             ResolvedOutlineSettings outline);
 
-        void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness);
+        void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii);
     }
 
     internal sealed class ElementOutlineRenderer : IOutlineRenderer
@@ -1202,7 +1450,7 @@ namespace Acfeel.UIToolkitLiteEffects
         {
         }
 
-        public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness)
+        public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii)
         {
             if (outlineColor.a <= 0.0001f || thickness <= 0.0001f || rect.width <= 0f || rect.height <= 0f)
             {
@@ -1216,32 +1464,48 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            var mesh = context.Allocate(16, 24, Texture2D.whiteTexture);
-            var vertices = new Vertex[16];
-            vertices[0] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, rect.yMin), Vector2.zero, outlineColor);
-            vertices[1] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, rect.yMin), Vector2.zero, outlineColor);
-            vertices[2] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, inner.yMin), Vector2.zero, outlineColor);
-            vertices[3] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, inner.yMin), Vector2.zero, outlineColor);
-            vertices[4] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, inner.yMax), Vector2.zero, outlineColor);
-            vertices[5] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, inner.yMax), Vector2.zero, outlineColor);
-            vertices[6] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, rect.yMax), Vector2.zero, outlineColor);
-            vertices[7] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, rect.yMax), Vector2.zero, outlineColor);
-            vertices[8] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, inner.yMin), Vector2.zero, outlineColor);
-            vertices[9] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(inner.xMin, inner.yMin), Vector2.zero, outlineColor);
-            vertices[10] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(inner.xMin, inner.yMax), Vector2.zero, outlineColor);
-            vertices[11] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, inner.yMax), Vector2.zero, outlineColor);
-            vertices[12] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(inner.xMax, inner.yMin), Vector2.zero, outlineColor);
-            vertices[13] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, inner.yMin), Vector2.zero, outlineColor);
-            vertices[14] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, inner.yMax), Vector2.zero, outlineColor);
-            vertices[15] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(inner.xMax, inner.yMax), Vector2.zero, outlineColor);
-            mesh.SetAllVertices(vertices);
-            mesh.SetAllIndices(new ushort[]
+            if (cornerRadii == Vector4.zero)
             {
-                0, 1, 2, 2, 3, 0,
-                4, 5, 6, 6, 7, 4,
-                8, 9, 10, 10, 11, 8,
-                12, 13, 14, 14, 15, 12
-            });
+                var mesh = context.Allocate(16, 24, Texture2D.whiteTexture);
+                var vertices = new Vertex[16];
+                vertices[0] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, rect.yMin), Vector2.zero, outlineColor);
+                vertices[1] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, rect.yMin), Vector2.zero, outlineColor);
+                vertices[2] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, inner.yMin), Vector2.zero, outlineColor);
+                vertices[3] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, inner.yMin), Vector2.zero, outlineColor);
+                vertices[4] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, inner.yMax), Vector2.zero, outlineColor);
+                vertices[5] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, inner.yMax), Vector2.zero, outlineColor);
+                vertices[6] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, rect.yMax), Vector2.zero, outlineColor);
+                vertices[7] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, rect.yMax), Vector2.zero, outlineColor);
+                vertices[8] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, inner.yMin), Vector2.zero, outlineColor);
+                vertices[9] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(inner.xMin, inner.yMin), Vector2.zero, outlineColor);
+                vertices[10] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(inner.xMin, inner.yMax), Vector2.zero, outlineColor);
+                vertices[11] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, inner.yMax), Vector2.zero, outlineColor);
+                vertices[12] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(inner.xMax, inner.yMin), Vector2.zero, outlineColor);
+                vertices[13] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, inner.yMin), Vector2.zero, outlineColor);
+                vertices[14] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMax, inner.yMax), Vector2.zero, outlineColor);
+                vertices[15] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(inner.xMax, inner.yMax), Vector2.zero, outlineColor);
+                mesh.SetAllVertices(vertices);
+                mesh.SetAllIndices(new ushort[]
+                {
+                    0, 1, 2, 2, 3, 0,
+                    4, 5, 6, 6, 7, 4,
+                    8, 9, 10, 10, 11, 8,
+                    12, 13, 14, 14, 15, 12
+                });
+            }
+            else
+            {
+                var verts = new System.Collections.Generic.List<Vertex>();
+                var indices = new System.Collections.Generic.List<ushort>();
+                LiteEffectMeshUtility.GenerateRoundedRingMesh(rect, cornerRadii, thickness, 8, verts, indices, outlineColor);
+
+                if (verts.Count > 0 && indices.Count > 0)
+                {
+                    var mesh = context.Allocate(verts.Count, indices.Count, Texture2D.whiteTexture);
+                    mesh.SetAllVertices(verts.ToArray());
+                    mesh.SetAllIndices(indices.ToArray());
+                }
+            }
         }
     }
 
@@ -1254,6 +1518,8 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly int OutlineSampleQualityId = Shader.PropertyToID("_OutlineSampleQuality");
         private static readonly int TexelSizeId = Shader.PropertyToID("_MainTexTexelSize");
         private static readonly int ContentUvRectId = Shader.PropertyToID("_ContentUvRect");
+        private static readonly int CornerRadiiId = Shader.PropertyToID("_CornerRadii");
+        private static readonly int RectSizeId = Shader.PropertyToID("_RectSize");
 
         public static readonly TransparentImageOutlineRenderer Instance = new();
 
@@ -1296,7 +1562,7 @@ namespace Acfeel.UIToolkitLiteEffects
             Graphics.Blit(sourceTexture, outlineTexture, outlineMaterial);
         }
 
-        public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness)
+        public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii)
         {
             if (outlineTexture == null || rect.width <= 0f || rect.height <= 0f)
             {
