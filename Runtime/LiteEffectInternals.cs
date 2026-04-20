@@ -1585,6 +1585,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii)
         {
+            UnityEngine.Debug.Log($"[TransparentImageOutlineRenderer.Generate] cornerRadii={cornerRadii}");
             if (outlineTexture == null || rect.width <= 0f || rect.height <= 0f)
             {
                 return;
