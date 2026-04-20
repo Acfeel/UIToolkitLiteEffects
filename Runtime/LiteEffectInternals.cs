@@ -913,6 +913,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
             cornerRadii = radii;
             activeOutlineRenderer = sourceTexture != null ? TransparentImageOutlineRenderer.Instance : ElementOutlineRenderer.Instance;
+            UnityEngine.Debug.Log($"[Outline] cornerRadii={cornerRadii}, contentRect.size={contentRect.size}");
             var dissolveFade = LiteEffectDissolveUtility.GetFlatFade(dissolve);
             var padding = activeOutlineRenderer.GetPadding(outline);
             var targetSize = new Vector2Int(
@@ -1203,6 +1204,7 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             cornerRadii = radii;
+            UnityEngine.Debug.Log($"[Glow] cornerRadii={cornerRadii}, contentRect.size={contentRect.size}");
             var glowSpreadPixels = LiteEffectNormalizedRange.ToGlowSpreadPixels(glow.Spread);
             var padding = Mathf.CeilToInt(Mathf.Max(2f, glowSpreadPixels * 3f));
             var targetSize = new Vector2Int(
@@ -1560,6 +1562,7 @@ namespace Acfeel.UIToolkitLiteEffects
             outlineMaterial.SetVector(ContentUvRectId, contentUvRect);
             outlineMaterial.SetVector(CornerRadiiId, cornerRadii);
             outlineMaterial.SetVector(RectSizeId, new Vector4(contentSize.x, contentSize.y, padding, 0f));
+            UnityEngine.Debug.Log($"[OutlineShader] Setting cornerRadii={cornerRadii}, contentSize={contentSize}, padding={padding}");
             Graphics.Blit(sourceTexture, outlineTexture, outlineMaterial);
         }
 
