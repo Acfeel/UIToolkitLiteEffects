@@ -912,6 +912,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void Update(Texture sourceTexture, Rect contentRect, ResolvedOutlineSettings outline, ResolvedDissolveSettings dissolve, float opacity, Visibility visibility, DisplayStyle display, Vector4 radii = default)
         {
+            UnityEngine.Debug.Log($"[OutlineController.Update] radii={radii}, outline.Enabled={outline.Enabled}, Opacity={outline.Opacity}");
             if (!outline.Enabled || outline.Opacity <= 0.0001f || outline.Thickness <= 0.0001f || contentRect.width <= 0f || contentRect.height <= 0f)
             {
                 Hide();
