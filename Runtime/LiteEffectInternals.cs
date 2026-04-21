@@ -1041,7 +1041,8 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            activeOutlineRenderer.Generate(context, outlineOverlayElement.contentRect, outlineTexture, outlineOverlayColor, outlineOverlayThickness, cornerRadii);
+            var contentRect = new Rect(0, 0, element.contentRect.width, element.contentRect.height);
+            activeOutlineRenderer.Generate(context, contentRect, outlineTexture, outlineOverlayColor, outlineOverlayThickness, cornerRadii);
         }
 
         private void EnsureOverlayElement()
