@@ -274,7 +274,7 @@ namespace Acfeel.UIToolkitLiteEffects
             {
                 var verts = new System.Collections.Generic.List<Vertex>();
                 var indices = new System.Collections.Generic.List<ushort>();
-                LiteEffectMeshUtility.GenerateRoundedRectMesh(rect, radii, 16, verts, indices, Color.white);
+                LiteEffectMeshUtility.GenerateRoundedRectMesh(rect, radii, 8, verts, indices, Color.white);
 
                 if (verts.Count > 0 && indices.Count > 0)
                 {
