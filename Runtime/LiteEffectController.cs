@@ -274,8 +274,7 @@ namespace Acfeel.UIToolkitLiteEffects
             {
                 var verts = new System.Collections.Generic.List<Vertex>();
                 var indices = new System.Collections.Generic.List<ushort>();
-                LiteEffectMeshUtility.GenerateRoundedRectMesh(rect, radii, 8, verts, indices, Color.white);
-                UnityEngine.Debug.Log($"[MainMesh] GenerateRoundedRectMesh: {verts.Count} verts, rect={rect}, radii={radii}");
+                LiteEffectMeshUtility.GenerateRoundedRectMesh(rect, radii, 16, verts, indices, Color.white);
 
                 if (verts.Count > 0 && indices.Count > 0)
                 {
@@ -354,9 +353,6 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             var cornerRadii = LiteEffectMeshUtility.ReadBorderRadii(element);
-            UnityEngine.Debug.Log($"[LiteEffectController] cornerRadii={cornerRadii}, element.name={element.name}");
-            if (cornerRadii != Vector4.zero)
-                UnityEngine.Debug.Log($"  borderRadii values: TL={element.resolvedStyle.borderTopLeftRadius}, TR={element.resolvedStyle.borderTopRightRadius}, BR={element.resolvedStyle.borderBottomRightRadius}, BL={element.resolvedStyle.borderBottomLeftRadius}");
             outlineOverlayController.Update(
                 sourceTexture,
                 element.contentRect,

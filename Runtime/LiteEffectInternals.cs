@@ -912,7 +912,6 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void Update(Texture sourceTexture, Rect contentRect, ResolvedOutlineSettings outline, ResolvedDissolveSettings dissolve, float opacity, Visibility visibility, DisplayStyle display, Vector4 radii = default)
         {
-            UnityEngine.Debug.Log($"[OutlineController.Update] radii={radii}, outline.Enabled={outline.Enabled}, Opacity={outline.Opacity}");
             if (!outline.Enabled || outline.Opacity <= 0.0001f || outline.Thickness <= 0.0001f || contentRect.width <= 0f || contentRect.height <= 0f)
             {
                 Hide();
@@ -1470,7 +1469,6 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii)
         {
-            UnityEngine.Debug.Log($"[ElementOutlineRenderer.Generate] cornerRadii={cornerRadii}");
             if (outlineColor.a <= 0.0001f || thickness <= 0.0001f || rect.width <= 0f || rect.height <= 0f)
             {
                 return;
@@ -1485,7 +1483,6 @@ namespace Acfeel.UIToolkitLiteEffects
 
             if (cornerRadii == Vector4.zero)
             {
-                UnityEngine.Debug.Log($"[ElementOutlineRenderer] Using simple 16-vertex mesh (no rounded corners)");
                 var mesh = context.Allocate(16, 24, Texture2D.whiteTexture);
                 var vertices = new Vertex[16];
                 vertices[0] = LiteEffectMeshUtility.CreateTintedVertex(new Vector2(rect.xMin, rect.yMin), Vector2.zero, outlineColor);
@@ -1515,7 +1512,6 @@ namespace Acfeel.UIToolkitLiteEffects
             }
             else
             {
-                UnityEngine.Debug.Log($"[ElementOutlineRenderer] Using GenerateRoundedRingMesh with cornerRadii={cornerRadii}");
                 var verts = new System.Collections.Generic.List<Vertex>();
                 var indices = new System.Collections.Generic.List<ushort>();
                 LiteEffectMeshUtility.GenerateRoundedRingMesh(rect, cornerRadii, thickness, 8, verts, indices, outlineColor);
@@ -1588,7 +1584,6 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii)
         {
-            UnityEngine.Debug.Log($"[TransparentImageOutlineRenderer.Generate] cornerRadii={cornerRadii}");
             if (outlineTexture == null || rect.width <= 0f || rect.height <= 0f)
             {
                 return;
@@ -1610,7 +1605,6 @@ namespace Acfeel.UIToolkitLiteEffects
                 var verts = new System.Collections.Generic.List<Vertex>();
                 var indices = new System.Collections.Generic.List<ushort>();
                 LiteEffectMeshUtility.GenerateRoundedRectMesh(rect, cornerRadii, 8, verts, indices, Color.white);
-                UnityEngine.Debug.Log($"[OutlineRenderer] Rounded mesh: {verts.Count} verts, cornerRadii={cornerRadii}");
 
                 if (verts.Count > 0 && indices.Count > 0)
                 {
