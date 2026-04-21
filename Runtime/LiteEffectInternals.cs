@@ -238,7 +238,7 @@ namespace Acfeel.UIToolkitLiteEffects
             indicesOut.Clear();
 
             var t = thickness;
-            var inner = new Rect(t, t, outer.width - t * 2f, outer.height - t * 2f);
+            var inner = new Rect(outer.x + t, outer.y + t, outer.width - t * 2f, outer.height - t * 2f);
             if (inner.width <= 0f || inner.height <= 0f)
                 return;
 
