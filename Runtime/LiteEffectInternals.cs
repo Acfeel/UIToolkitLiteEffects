@@ -901,6 +901,7 @@ namespace Acfeel.UIToolkitLiteEffects
         private float outlineOverlayThickness;
         private IOutlineRenderer activeOutlineRenderer;
         private Vector4 cornerRadii = Vector4.zero;
+        private int outlineOverlayPadding;
 
         public LiteEffectOutlineOverlayController(VisualElement element)
         {
@@ -934,6 +935,7 @@ namespace Acfeel.UIToolkitLiteEffects
             activeOutlineRenderer = sourceTexture != null ? TransparentImageOutlineRenderer.Instance : ElementOutlineRenderer.Instance;
             var dissolveFade = LiteEffectDissolveUtility.GetFlatFade(dissolve);
             var padding = activeOutlineRenderer.GetPadding(outline);
+            outlineOverlayPadding = padding;
             var targetSize = new Vector2Int(
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.width) + padding * 2, 1, 2048),
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.height) + padding * 2, 1, 2048));
@@ -1041,8 +1043,7 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            var contentRect = new Rect(0, 0, element.contentRect.width, element.contentRect.height);
-            activeOutlineRenderer.Generate(context, contentRect, outlineTexture, outlineOverlayColor, outlineOverlayThickness, cornerRadii);
+            activeOutlineRenderer.Generate(context, outlineOverlayElement.contentRect, outlineTexture, outlineOverlayColor, outlineOverlayThickness, cornerRadii, outlineOverlayPadding);
         }
 
         private void EnsureOverlayElement()
@@ -1442,7 +1443,7 @@ namespace Acfeel.UIToolkitLiteEffects
             ResolvedOutlineSettings outline,
             Vector4 cornerRadii);
 
-        void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii);
+        void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii, int padding);
     }
 
     internal sealed class ElementOutlineRenderer : IOutlineRenderer
@@ -1468,7 +1469,7 @@ namespace Acfeel.UIToolkitLiteEffects
         {
         }
 
-        public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii)
+        public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii, int padding)
         {
             if (outlineColor.a <= 0.0001f || thickness <= 0.0001f || rect.width <= 0f || rect.height <= 0f)
             {
@@ -1476,7 +1477,7 @@ namespace Acfeel.UIToolkitLiteEffects
             }
 
             var t = thickness;
-            var inner = new Rect(t, t, rect.width - t * 2f, rect.height - t * 2f);
+            var inner = new Rect(t + padding, t + padding, rect.width - t * 2f - padding * 2f, rect.height - t * 2f - padding * 2f);
             if (inner.width <= 0f || inner.height <= 0f)
             {
                 return;
@@ -1583,7 +1584,7 @@ namespace Acfeel.UIToolkitLiteEffects
             Graphics.Blit(sourceTexture, outlineTexture, outlineMaterial);
         }
 
-        public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii)
+        public void Generate(MeshGenerationContext context, Rect rect, RenderTexture outlineTexture, Color outlineColor, float thickness, Vector4 cornerRadii, int padding)
         {
             if (outlineTexture == null || rect.width <= 0f || rect.height <= 0f)
             {
