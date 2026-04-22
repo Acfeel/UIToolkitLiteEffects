@@ -62,8 +62,6 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
             float _LiteEffectTime;
             float4 _MainTexTexelSize;
             float4 _ContentUvRect;
-            float4 _CornerRadii;
-            float4 _RectSize;
             float _OutlineOnly;
 
             struct appdata
@@ -84,16 +82,6 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 return o;
-            }
-
-            float SDFRoundedRect(float2 p, float2 size, float4 radii)
-            {
-                float2 c = abs(p) - size * 0.5;
-                float radius = (p.x > 0.0)
-                    ? ((p.y > 0.0) ? radii.z : radii.y)
-                    : ((p.y > 0.0) ? radii.w : radii.x);
-                float2 q = c + radius;
-                return min(max(c.x, c.y), 0.0) + length(max(q, 0.0)) - radius;
             }
 
             float3 ApplyContrast(float3 color, float contrast)
@@ -366,14 +354,6 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 {
                     processed.rgb = lerp(processed.rgb, _ColorizeColor.rgb, _ColorizeStrength);
                 }
-
-                // Apply corner radius mask for UI Toolkit compatibility
-                float2 pixelPos = uv * _MainTexTexelSize.zw;
-                float2 rectCenter = _RectSize.xy * 0.5;
-                float2 localPos = pixelPos - rectCenter;
-                float cornerDist = SDFRoundedRect(localPos, _RectSize.xy, _CornerRadii);
-                float cornerMask = saturate(0.5 - cornerDist);
-                processed.a *= cornerMask;
 
                 processed.rgb = saturate(processed.rgb);
                 processed.a = saturate(processed.a);

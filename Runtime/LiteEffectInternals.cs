@@ -337,10 +337,8 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly int TimeId = Shader.PropertyToID("_LiteEffectTime");
         private static readonly int TexelSizeId = Shader.PropertyToID("_MainTexTexelSize");
         private static readonly int ContentUvRectId = Shader.PropertyToID("_ContentUvRect");
-        private static readonly int CornerRadiiId = Shader.PropertyToID("_CornerRadii");
-        private static readonly int RectSizeId = Shader.PropertyToID("_RectSize");
 
-        public static void Bind(Material material, Texture inputTexture, Color backgroundColor, ResolvedLiteEffectSettings resolvedSettings, RenderTexture processedTexture, Rect contentRect, Vector4 cornerRadii)
+        public static void Bind(Material material, Texture inputTexture, Color backgroundColor, ResolvedLiteEffectSettings resolvedSettings, RenderTexture processedTexture)
         {
             var gradientRadians = resolvedSettings.Gradient.Angle * Mathf.Deg2Rad;
 
@@ -381,8 +379,6 @@ namespace Acfeel.UIToolkitLiteEffects
             material.SetFloat(OutlineEnabledId, 0f); // Outline is rendered via overlay element, not the main shader pass
             material.SetVector(TexelSizeId, new Vector4(1f / processedTexture.width, 1f / processedTexture.height, processedTexture.width, processedTexture.height));
             material.SetVector(ContentUvRectId, new Vector4(0f, 0f, 1f, 1f));
-            material.SetVector(CornerRadiiId, cornerRadii);
-            material.SetVector(RectSizeId, new Vector4(contentRect.width, contentRect.height, 0f, 0f));
         }
     }
 
@@ -432,7 +428,7 @@ namespace Acfeel.UIToolkitLiteEffects
 
         public RenderTexture ProcessedTexture => processedTexture;
 
-        public bool Update(Rect contentRect, Texture sourceTexture, Color backgroundColor, ResolvedLiteEffectSettings resolvedSettings, Vector4 cornerRadii)
+        public bool Update(Rect contentRect, Texture sourceTexture, Color backgroundColor, ResolvedLiteEffectSettings resolvedSettings)
         {
             var targetSize = new Vector2Int(
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.width), 1, 2048),
@@ -447,7 +443,7 @@ namespace Acfeel.UIToolkitLiteEffects
             EnsureMaterial();
             EnsureProcessedTexture(targetSize);
             var inputTexture = sourceTexture != null ? sourceTexture : Texture2D.whiteTexture;
-            LiteEffectMaterialBinder.Bind(effectMaterial, inputTexture, backgroundColor, resolvedSettings, processedTexture, contentRect, cornerRadii);
+            LiteEffectMaterialBinder.Bind(effectMaterial, inputTexture, backgroundColor, resolvedSettings, processedTexture);
             Graphics.Blit(inputTexture, processedTexture, effectMaterial);
             return true;
         }
