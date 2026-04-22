@@ -35,8 +35,6 @@ namespace Acfeel.UIToolkitLiteEffects
             if (float.IsNaN(rect.width) || float.IsNaN(rect.height) || rect.width <= 0f || rect.height <= 0f)
                 return Vector4.zero;
 
-            var maxRadius = Mathf.Min(rect.width, rect.height) * 0.5f;
-
             // Try resolvedStyle first, fallback to inline style if not resolved
             var tl = element.resolvedStyle.borderTopLeftRadius;
             var tr = element.resolvedStyle.borderTopRightRadius;
@@ -52,11 +50,6 @@ namespace Acfeel.UIToolkitLiteEffects
                 br = element.style.borderBottomRightRadius.value.value;
             if (bl <= 0.01f && element.style.borderBottomLeftRadius != StyleKeyword.Null && element.style.borderBottomLeftRadius != StyleKeyword.Undefined)
                 bl = element.style.borderBottomLeftRadius.value.value;
-
-            tl = Mathf.Min(tl, maxRadius);
-            tr = Mathf.Min(tr, maxRadius);
-            br = Mathf.Min(br, maxRadius);
-            bl = Mathf.Min(bl, maxRadius);
 
             return new Vector4(tl, tr, br, bl);
         }
