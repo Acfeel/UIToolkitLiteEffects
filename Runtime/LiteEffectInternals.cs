@@ -51,29 +51,42 @@ namespace Acfeel.UIToolkitLiteEffects
             if (bl <= 0.01f && element.style.borderBottomLeftRadius != StyleKeyword.Null && element.style.borderBottomLeftRadius != StyleKeyword.Undefined)
                 bl = element.style.borderBottomLeftRadius.value.value;
 
-            // Apply CSS proportional scaling to ensure corners fit within bounds
-            // This preserves different radius values per corner while scaling proportionally
-            var horizontalSum = Mathf.Max(tl + tr, br + bl);
-            var verticalSum = Mathf.Max(tl + bl, tr + br);
+            // Apply CSS proportional scaling: scale each corner independently per axis
+            // CSS Spec: if (tl+tr > width) scale both proportionally, if (tl+bl > height) scale both proportionally, etc.
+            float tlScale = 1.0f, trScale = 1.0f, brScale = 1.0f, blScale = 1.0f;
 
-            float hScale = horizontalSum > rect.width && rect.width > 0.0001f ? rect.width / horizontalSum : 1.0f;
-            float vScale = verticalSum > rect.height && rect.height > 0.0001f ? rect.height / verticalSum : 1.0f;
-            float scale = Mathf.Min(hScale, vScale);
-
-            tl *= scale;
-            tr *= scale;
-            br *= scale;
-            bl *= scale;
-
-            #if UNITY_EDITOR
-            if (scale < 1.0f)
+            // Horizontal constraints: top edge and bottom edge
+            if (tl + tr > rect.width && rect.width > 0.0001f)
             {
-                UnityEngine.Debug.Log($"[ReadBorderRadii] Element: {element.name}, " +
-                    $"rect=({rect.width}x{rect.height}), " +
-                    $"hScale={hScale:F3}, vScale={vScale:F3}, scale={scale:F3}, " +
-                    $"final radii=({tl:F1}, {tr:F1}, {br:F1}, {bl:F1})");
+                float s = rect.width / (tl + tr);
+                tlScale = Mathf.Min(tlScale, s);
+                trScale = Mathf.Min(trScale, s);
             }
-            #endif
+            if (br + bl > rect.width && rect.width > 0.0001f)
+            {
+                float s = rect.width / (br + bl);
+                brScale = Mathf.Min(brScale, s);
+                blScale = Mathf.Min(blScale, s);
+            }
+
+            // Vertical constraints: left edge and right edge
+            if (tl + bl > rect.height && rect.height > 0.0001f)
+            {
+                float s = rect.height / (tl + bl);
+                tlScale = Mathf.Min(tlScale, s);
+                blScale = Mathf.Min(blScale, s);
+            }
+            if (tr + br > rect.height && rect.height > 0.0001f)
+            {
+                float s = rect.height / (tr + br);
+                trScale = Mathf.Min(trScale, s);
+                brScale = Mathf.Min(brScale, s);
+            }
+
+            tl *= tlScale;
+            tr *= trScale;
+            br *= brScale;
+            bl *= blScale;
 
             return new Vector4(tl, tr, br, bl);
         }
