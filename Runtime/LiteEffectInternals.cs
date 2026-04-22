@@ -41,6 +41,10 @@ namespace Acfeel.UIToolkitLiteEffects
             var br = element.resolvedStyle.borderBottomRightRadius;
             var bl = element.resolvedStyle.borderBottomLeftRadius;
 
+            #if UNITY_EDITOR
+            UnityEngine.Debug.Log($"[ReadBorderRadii] {element.name} resolvedStyle: TL={tl}, TR={tr}, BR={br}, BL={bl}");
+            #endif
+
             // If resolvedStyle is zero, check inline style
             if (tl <= 0.01f && element.style.borderTopLeftRadius != StyleKeyword.Null && element.style.borderTopLeftRadius != StyleKeyword.Undefined)
                 tl = element.style.borderTopLeftRadius.value.value;
@@ -50,6 +54,10 @@ namespace Acfeel.UIToolkitLiteEffects
                 br = element.style.borderBottomRightRadius.value.value;
             if (bl <= 0.01f && element.style.borderBottomLeftRadius != StyleKeyword.Null && element.style.borderBottomLeftRadius != StyleKeyword.Undefined)
                 bl = element.style.borderBottomLeftRadius.value.value;
+
+            #if UNITY_EDITOR
+            UnityEngine.Debug.Log($"[ReadBorderRadii] After fallback: TL={tl}, TR={tr}, BR={br}, BL={bl}");
+            #endif
 
             // Apply CSS proportional scaling: scale each corner independently per axis
             // CSS Spec: if (tl+tr > width) scale both proportionally, if (tl+bl > height) scale both proportionally, etc.
@@ -87,6 +95,13 @@ namespace Acfeel.UIToolkitLiteEffects
             tr *= trScale;
             br *= brScale;
             bl *= blScale;
+
+            #if UNITY_EDITOR
+            UnityEngine.Debug.Log($"[ReadBorderRadii] {element.name} Final: " +
+                $"rect=({rect.width}x{rect.height}), " +
+                $"scales=(TL:{tlScale:F3}, TR:{trScale:F3}, BR:{brScale:F3}, BL:{blScale:F3}), " +
+                $"result=({tl:F1}, {tr:F1}, {br:F1}, {bl:F1})");
+            #endif
 
             return new Vector4(tl, tr, br, bl);
         }
