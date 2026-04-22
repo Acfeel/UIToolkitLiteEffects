@@ -59,47 +59,17 @@ namespace Acfeel.UIToolkitLiteEffects
             UnityEngine.Debug.Log($"[ReadBorderRadii] After fallback: TL={tl}, TR={tr}, BR={br}, BL={bl}");
             #endif
 
-            // Apply CSS proportional scaling: scale each corner independently per axis
-            // CSS Spec: if (tl+tr > width) scale both proportionally, if (tl+bl > height) scale both proportionally, etc.
-            float tlScale = 1.0f, trScale = 1.0f, brScale = 1.0f, blScale = 1.0f;
-
-            // Horizontal constraints: top edge and bottom edge
-            if (tl + tr > rect.width && rect.width > 0.0001f)
-            {
-                float s = rect.width / (tl + tr);
-                tlScale = Mathf.Min(tlScale, s);
-                trScale = Mathf.Min(trScale, s);
-            }
-            if (br + bl > rect.width && rect.width > 0.0001f)
-            {
-                float s = rect.width / (br + bl);
-                brScale = Mathf.Min(brScale, s);
-                blScale = Mathf.Min(blScale, s);
-            }
-
-            // Vertical constraints: left edge and right edge
-            if (tl + bl > rect.height && rect.height > 0.0001f)
-            {
-                float s = rect.height / (tl + bl);
-                tlScale = Mathf.Min(tlScale, s);
-                blScale = Mathf.Min(blScale, s);
-            }
-            if (tr + br > rect.height && rect.height > 0.0001f)
-            {
-                float s = rect.height / (tr + br);
-                trScale = Mathf.Min(trScale, s);
-                brScale = Mathf.Min(brScale, s);
-            }
-
-            tl *= tlScale;
-            tr *= trScale;
-            br *= brScale;
-            bl *= blScale;
+            // Clamp each corner radius independently to fit within the element bounds
+            // This preserves different radius values while preventing them from exceeding dimensions
+            float maxDim = Mathf.Max(rect.width, rect.height);
+            tl = Mathf.Min(tl, maxDim);
+            tr = Mathf.Min(tr, maxDim);
+            br = Mathf.Min(br, maxDim);
+            bl = Mathf.Min(bl, maxDim);
 
             #if UNITY_EDITOR
             UnityEngine.Debug.Log($"[ReadBorderRadii] {element.name} Final: " +
-                $"rect=({rect.width}x{rect.height}), " +
-                $"scales=(TL:{tlScale:F3}, TR:{trScale:F3}, BR:{brScale:F3}, BL:{blScale:F3}), " +
+                $"rect=({rect.width}x{rect.height}), maxDim={maxDim}, " +
                 $"result=({tl:F1}, {tr:F1}, {br:F1}, {bl:F1})");
             #endif
 
