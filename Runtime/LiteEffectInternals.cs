@@ -51,6 +51,28 @@ namespace Acfeel.UIToolkitLiteEffects
             if (bl <= 0.01f && element.style.borderBottomLeftRadius != StyleKeyword.Null && element.style.borderBottomLeftRadius != StyleKeyword.Undefined)
                 bl = element.style.borderBottomLeftRadius.value.value;
 
+            // CSS規則：対辺の半径合計がサイズを超える場合は比例的に縮小
+            var horizontalSum = Mathf.Max(tr + tl, br + bl);
+            var verticalSum = Mathf.Max(tr + br, tl + bl);
+
+            if (horizontalSum > rect.width && rect.width > 0f)
+            {
+                var scale = rect.width / horizontalSum;
+                tl *= scale;
+                tr *= scale;
+                br *= scale;
+                bl *= scale;
+            }
+
+            if (verticalSum > rect.height && rect.height > 0f)
+            {
+                var scale = rect.height / verticalSum;
+                tl *= scale;
+                tr *= scale;
+                br *= scale;
+                bl *= scale;
+            }
+
             return new Vector4(tl, tr, br, bl);
         }
 
