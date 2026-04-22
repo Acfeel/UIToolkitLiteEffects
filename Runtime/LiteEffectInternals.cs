@@ -65,6 +65,16 @@ namespace Acfeel.UIToolkitLiteEffects
             br *= scale;
             bl *= scale;
 
+            #if UNITY_EDITOR
+            if (scale < 1.0f)
+            {
+                UnityEngine.Debug.Log($"[ReadBorderRadii] Element: {element.name}, " +
+                    $"rect=({rect.width}x{rect.height}), " +
+                    $"hScale={hScale:F3}, vScale={vScale:F3}, scale={scale:F3}, " +
+                    $"final radii=({tl:F1}, {tr:F1}, {br:F1}, {bl:F1})");
+            }
+            #endif
+
             return new Vector4(tl, tr, br, bl);
         }
 
