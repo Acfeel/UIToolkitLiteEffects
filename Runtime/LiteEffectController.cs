@@ -256,33 +256,16 @@ namespace Acfeel.UIToolkitLiteEffects
                 return;
             }
 
-            var radii = LiteEffectMeshUtility.ReadBorderRadii(element);
+            // Always use simple quad mesh; shader handles corner masking
+            var mesh = context.Allocate(4, 6, processedTexture);
+            var vertices = new Vertex[4];
+            vertices[0] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMin, rect.yMin), new Vector2(0f, 1f));
+            vertices[1] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMax, rect.yMin), new Vector2(1f, 1f));
+            vertices[2] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMax, rect.yMax), new Vector2(1f, 0f));
+            vertices[3] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMin, rect.yMax), new Vector2(0f, 0f));
 
-            if (radii == Vector4.zero)
-            {
-                var mesh = context.Allocate(4, 6, processedTexture);
-                var vertices = new Vertex[4];
-                vertices[0] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMin, rect.yMin), new Vector2(0f, 1f));
-                vertices[1] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMax, rect.yMin), new Vector2(1f, 1f));
-                vertices[2] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMax, rect.yMax), new Vector2(1f, 0f));
-                vertices[3] = LiteEffectMeshUtility.CreateVertex(new Vector2(rect.xMin, rect.yMax), new Vector2(0f, 0f));
-
-                mesh.SetAllVertices(vertices);
-                mesh.SetAllIndices(new ushort[] { 0, 1, 2, 2, 3, 0 });
-            }
-            else
-            {
-                var verts = new System.Collections.Generic.List<Vertex>();
-                var indices = new System.Collections.Generic.List<ushort>();
-                LiteEffectMeshUtility.GenerateRoundedRectMesh(rect, radii, 8, verts, indices, Color.white);
-
-                if (verts.Count > 0 && indices.Count > 0)
-                {
-                    var mesh = context.Allocate(verts.Count, indices.Count, processedTexture);
-                    mesh.SetAllVertices(verts.ToArray());
-                    mesh.SetAllIndices(indices.ToArray());
-                }
-            }
+            mesh.SetAllVertices(vertices);
+            mesh.SetAllIndices(new ushort[] { 0, 1, 2, 2, 3, 0 });
 
             if (resolvedSettings.RequiresRealtimeRefresh)
             {
@@ -344,15 +327,15 @@ namespace Acfeel.UIToolkitLiteEffects
                 SuppressBackgroundColor();
             }
 
-            if (!renderTextureController.Update(element.contentRect, sourceTexture, backgroundColor, resolvedSettings))
+            var cornerRadii = LiteEffectMeshUtility.ReadBorderRadii(element);
+
+            if (!renderTextureController.Update(element.contentRect, sourceTexture, backgroundColor, resolvedSettings, cornerRadii))
             {
                 glowOverlayController.Hide();
                 outlineOverlayController.Hide();
                 overflowController.SetExpanded(false);
                 return;
             }
-
-            var cornerRadii = LiteEffectMeshUtility.ReadBorderRadii(element);
             outlineOverlayController.Update(
                 sourceTexture,
                 element.contentRect,
