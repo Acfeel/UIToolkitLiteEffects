@@ -59,17 +59,19 @@ namespace Acfeel.UIToolkitLiteEffects
             UnityEngine.Debug.Log($"[ReadBorderRadii] After fallback: TL={tl}, TR={tr}, BR={br}, BL={bl}");
             #endif
 
-            // Clamp each corner radius independently to fit within the element bounds
-            // This preserves different radius values while preventing them from exceeding dimensions
-            float maxDim = Mathf.Max(rect.width, rect.height);
-            tl = Mathf.Min(tl, maxDim);
-            tr = Mathf.Min(tr, maxDim);
-            br = Mathf.Min(br, maxDim);
-            bl = Mathf.Min(bl, maxDim);
+            // Clamp each corner radius to half of its corresponding dimension to prevent arc center inversion
+            // Each radius must be ≤ width/2 (for horizontal pairs) and ≤ height/2 (for vertical pairs)
+            float maxHorizontal = rect.width * 0.5f;
+            float maxVertical = rect.height * 0.5f;
+
+            tl = Mathf.Min(tl, maxHorizontal, maxVertical);
+            tr = Mathf.Min(tr, maxHorizontal, maxVertical);
+            br = Mathf.Min(br, maxHorizontal, maxVertical);
+            bl = Mathf.Min(bl, maxHorizontal, maxVertical);
 
             #if UNITY_EDITOR
             UnityEngine.Debug.Log($"[ReadBorderRadii] {element.name} Final: " +
-                $"rect=({rect.width}x{rect.height}), maxDim={maxDim}, " +
+                $"rect=({rect.width}x{rect.height}), limits=(H:{maxHorizontal:F1}, V:{maxVertical:F1}), " +
                 $"result=({tl:F1}, {tr:F1}, {br:F1}, {bl:F1})");
             #endif
 
