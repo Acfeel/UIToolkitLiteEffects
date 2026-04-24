@@ -4,18 +4,11 @@ using UnityEngine.UIElements;
 
 namespace Acfeel.UIToolkitLiteEffects
 {
-    internal sealed class LiteEffectOutlineOverlayController : IDisposable
+    internal sealed class LiteEffectOutlineOverlayController : LiteEffectOverlayControllerBase
     {
         private static readonly int DissolveEnabledId = Shader.PropertyToID("_DissolveEnabled");
         private static readonly int DissolveAmountId = Shader.PropertyToID("_DissolveAmount");
         private static readonly int DissolveEdgeWidthId = Shader.PropertyToID("_DissolveEdgeWidth");
-        private readonly VisualElement element;
-        private readonly Shader outlineShader;
-        private VisualElement outlineOverlayElement;
-        private VisualElement outlineOverlayHost;
-        private RenderTexture outlineTexture;
-        private Material outlineMaterial;
-        private Vector2Int outlineTextureSize;
         private Color outlineOverlayColor = Color.clear;
         private float outlineOverlayThickness;
         private IOutlineRenderer activeOutlineRenderer;
@@ -23,12 +16,9 @@ namespace Acfeel.UIToolkitLiteEffects
         private int outlineOverlayPadding;
 
         public LiteEffectOutlineOverlayController(VisualElement element)
+            : base(element, "AcfeelUIToolkitLiteOutline", "Hidden/Acfeel/UIToolkitLiteOutline")
         {
-            this.element = element;
-            outlineShader = LiteEffectShaderResolver.Resolve("AcfeelUIToolkitLiteOutline", "Hidden/Acfeel/UIToolkitLiteOutline");
         }
-
-        public bool IsVisible { get; private set; }
 
         public void Update(Texture sourceTexture, Rect contentRect, ResolvedOutlineSettings outline, ResolvedDissolveSettings dissolve, float opacity, Visibility visibility, DisplayStyle display, Vector4 radii = default)
         {
@@ -59,22 +49,22 @@ namespace Acfeel.UIToolkitLiteEffects
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.width) + padding * 2, 1, 2048),
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.height) + padding * 2, 1, 2048));
 
-            var hostWorldRect = outlineOverlayHost.worldBound;
+            var hostWorldRect = overlayHost.worldBound;
             var contentWorldRect = new Rect(
                 element.worldBound.xMin + contentRect.xMin,
                 element.worldBound.yMin + contentRect.yMin,
                 contentRect.width,
                 contentRect.height);
 
-            outlineOverlayElement.style.left = contentWorldRect.xMin - hostWorldRect.xMin - padding;
-            outlineOverlayElement.style.top = contentWorldRect.yMin - hostWorldRect.yMin - padding;
-            outlineOverlayElement.style.width = targetSize.x;
-            outlineOverlayElement.style.height = targetSize.y;
-            outlineOverlayElement.style.opacity = opacity;
-            outlineOverlayElement.style.visibility = visibility;
-            outlineOverlayElement.style.display = display == DisplayStyle.None ? DisplayStyle.None : DisplayStyle.Flex;
-            outlineOverlayElement.style.backgroundImage = StyleKeyword.Null;
-            outlineOverlayElement.style.backgroundColor = StyleKeyword.Null;
+            overlayElement.style.left = contentWorldRect.xMin - hostWorldRect.xMin - padding;
+            overlayElement.style.top = contentWorldRect.yMin - hostWorldRect.yMin - padding;
+            overlayElement.style.width = targetSize.x;
+            overlayElement.style.height = targetSize.y;
+            overlayElement.style.opacity = opacity;
+            overlayElement.style.visibility = visibility;
+            overlayElement.style.display = display == DisplayStyle.None ? DisplayStyle.None : DisplayStyle.Flex;
+            overlayElement.style.backgroundImage = StyleKeyword.Null;
+            overlayElement.style.backgroundColor = StyleKeyword.Null;
 
             var outlineThicknessPixels = LiteEffectNormalizedRange.ToOutlineThicknessPixels(outline.Thickness);
             outlineOverlayColor = new Color(
@@ -93,169 +83,64 @@ namespace Acfeel.UIToolkitLiteEffects
                     return;
                 }
 
-                EnsureOutlineMaterial();
-                EnsureOutlineTexture(targetSize);
-                outlineMaterial.SetFloat(DissolveEnabledId, dissolve.Enabled ? 1f : 0f);
-                outlineMaterial.SetFloat(DissolveAmountId, dissolve.Amount);
-                outlineMaterial.SetFloat(DissolveEdgeWidthId, dissolve.EdgeWidth);
-                activeOutlineRenderer.PrepareTexture(outlineMaterial, outlineTexture, sourceTexture, contentRect.size, targetSize, padding, outline, cornerRadii);
+                EnsureOverlayMaterial();
+                EnsureOverlayTexture(targetSize);
+                overlayMaterial.SetFloat(DissolveEnabledId, dissolve.Enabled ? 1f : 0f);
+                overlayMaterial.SetFloat(DissolveAmountId, dissolve.Amount);
+                overlayMaterial.SetFloat(DissolveEdgeWidthId, dissolve.EdgeWidth);
+                activeOutlineRenderer.PrepareTexture(overlayMaterial, overlayTexture, sourceTexture, contentRect.size, targetSize, padding, outline, cornerRadii);
             }
             else
             {
-                ReleaseOutlineTexture();
+                ReleaseOverlayTexture();
             }
 
-            outlineOverlayElement.MarkDirtyRepaint();
+            overlayElement.MarkDirtyRepaint();
         }
 
-        public void Hide()
+        public override void Hide()
         {
-            if (outlineOverlayElement != null)
-            {
-                outlineOverlayElement.style.display = DisplayStyle.None;
-                outlineOverlayElement.style.backgroundImage = StyleKeyword.Null;
-                outlineOverlayElement.style.backgroundColor = StyleKeyword.Null;
-            }
-
+            base.Hide();
             activeOutlineRenderer = null;
             outlineOverlayColor = Color.clear;
             outlineOverlayThickness = 0f;
-            IsVisible = false;
-            ReleaseOutlineTexture();
         }
 
-        public void Detach()
+        public override void Detach()
         {
-            Hide();
-            if (outlineOverlayElement != null)
+            if (overlayElement != null)
             {
-                outlineOverlayElement.RemoveFromHierarchy();
+                overlayElement.generateVisualContent -= OnGenerateVisualContent;
             }
-
-            outlineOverlayHost = null;
+            base.Detach();
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
-            Hide();
-
-            if (outlineMaterial != null)
+            if (overlayElement != null)
             {
-                UnityEngine.Object.DestroyImmediate(outlineMaterial);
-                outlineMaterial = null;
+                overlayElement.generateVisualContent -= OnGenerateVisualContent;
             }
-
-            if (outlineOverlayElement != null)
-            {
-                outlineOverlayElement.generateVisualContent -= OnGenerateVisualContent;
-                outlineOverlayElement.RemoveFromHierarchy();
-                outlineOverlayElement = null;
-            }
-
-            outlineOverlayHost = null;
+            base.Dispose();
         }
 
         private void OnGenerateVisualContent(MeshGenerationContext context)
         {
-            if (activeOutlineRenderer == null || outlineOverlayElement == null)
+            if (activeOutlineRenderer == null || overlayElement == null)
             {
                 return;
             }
 
-            activeOutlineRenderer.Generate(context, outlineOverlayElement.contentRect, outlineTexture, outlineOverlayColor, outlineOverlayThickness, cornerRadii, outlineOverlayPadding);
+            activeOutlineRenderer.Generate(context, overlayElement.contentRect, overlayTexture, outlineOverlayColor, outlineOverlayThickness, cornerRadii, outlineOverlayPadding);
         }
 
-        private void EnsureOverlayElement()
+        protected override void EnsureOverlayElement()
         {
-            if (outlineOverlayElement != null)
+            base.EnsureOverlayElement();
+            if (overlayElement != null)
             {
-                return;
+                overlayElement.generateVisualContent += OnGenerateVisualContent;
             }
-
-            outlineOverlayElement = new VisualElement
-            {
-                pickingMode = PickingMode.Ignore
-            };
-            outlineOverlayElement.style.position = Position.Absolute;
-            outlineOverlayElement.style.display = DisplayStyle.None;
-            outlineOverlayElement.generateVisualContent += OnGenerateVisualContent;
         }
-
-        private bool EnsureOverlayHost()
-        {
-            var parent = element.parent;
-            if (parent == null)
-            {
-                return false;
-            }
-
-            EnsureOverlayElement();
-            if (outlineOverlayElement.parent != parent)
-            {
-                outlineOverlayElement.RemoveFromHierarchy();
-                parent.Insert(parent.IndexOf(element), outlineOverlayElement);
-            }
-            else
-            {
-                var elementIndex = parent.IndexOf(element);
-                var overlayIndex = parent.IndexOf(outlineOverlayElement);
-                if (overlayIndex >= elementIndex)
-                {
-                    outlineOverlayElement.RemoveFromHierarchy();
-                    parent.Insert(elementIndex, outlineOverlayElement);
-                }
-            }
-
-            outlineOverlayHost = parent;
-            return true;
-        }
-
-        private void EnsureOutlineMaterial()
-        {
-            if (outlineMaterial != null)
-            {
-                return;
-            }
-
-            outlineMaterial = new Material(outlineShader)
-            {
-                hideFlags = HideFlags.HideAndDontSave
-            };
-        }
-
-        private void EnsureOutlineTexture(Vector2Int targetSize)
-        {
-            if (outlineTexture != null && outlineTextureSize == targetSize)
-            {
-                return;
-            }
-
-            ReleaseOutlineTexture();
-
-            outlineTexture = new RenderTexture(targetSize.x, targetSize.y, 0, RenderTextureFormat.ARGB32)
-            {
-                name = "UIToolkitLiteEffects_OutlineRT",
-                hideFlags = HideFlags.HideAndDontSave,
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear
-            };
-            outlineTexture.Create();
-            outlineTextureSize = targetSize;
-        }
-
-        private void ReleaseOutlineTexture()
-        {
-            outlineTextureSize = default;
-
-            if (outlineTexture == null)
-            {
-                return;
-            }
-
-            outlineTexture.Release();
-            UnityEngine.Object.DestroyImmediate(outlineTexture);
-            outlineTexture = null;
-        }
-
     }
 }

@@ -4,7 +4,7 @@ using UnityEngine.UIElements;
 
 namespace Acfeel.UIToolkitLiteEffects
 {
-    internal sealed class LiteEffectGlowOverlayController : IDisposable
+    internal sealed class LiteEffectGlowOverlayController : LiteEffectOverlayControllerBase
     {
         private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
         private static readonly int GlowColorId = Shader.PropertyToID("_GlowColor");
@@ -19,22 +19,12 @@ namespace Acfeel.UIToolkitLiteEffects
         private static readonly int CornerRadiiId = Shader.PropertyToID("_CornerRadii");
         private static readonly int RectSizeId = Shader.PropertyToID("_RectSize");
 
-        private readonly VisualElement element;
-        private readonly Shader glowShader;
-        private VisualElement glowOverlayElement;
-        private VisualElement glowOverlayHost;
-        private RenderTexture glowTexture;
-        private Material glowMaterial;
-        private Vector2Int glowTextureSize;
         private Vector4 cornerRadii = Vector4.zero;
 
         public LiteEffectGlowOverlayController(VisualElement element)
+            : base(element, "AcfeelUIToolkitLiteGlow", "Hidden/Acfeel/UIToolkitLiteGlow")
         {
-            this.element = element;
-            glowShader = LiteEffectShaderResolver.Resolve("AcfeelUIToolkitLiteGlow", "Hidden/Acfeel/UIToolkitLiteGlow");
         }
-
-        public bool IsVisible { get; private set; }
 
         public void Update(
             Texture sourceTexture,
@@ -79,23 +69,23 @@ namespace Acfeel.UIToolkitLiteEffects
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.width) + padding * 2, 1, 2048),
                 Mathf.Clamp(Mathf.CeilToInt(contentRect.height) + padding * 2, 1, 2048));
 
-            var hostWorldRect = glowOverlayHost.worldBound;
+            var hostWorldRect = overlayHost.worldBound;
             var contentWorldRect = new Rect(
                 element.worldBound.xMin + contentRect.xMin,
                 element.worldBound.yMin + contentRect.yMin,
                 contentRect.width,
                 contentRect.height);
 
-            glowOverlayElement.style.left = contentWorldRect.xMin - hostWorldRect.xMin - padding;
-            glowOverlayElement.style.top = contentWorldRect.yMin - hostWorldRect.yMin - padding;
-            glowOverlayElement.style.width = targetSize.x;
-            glowOverlayElement.style.height = targetSize.y;
-            glowOverlayElement.style.opacity = opacity;
-            glowOverlayElement.style.visibility = visibility;
-            glowOverlayElement.style.display = display == DisplayStyle.None ? DisplayStyle.None : DisplayStyle.Flex;
+            overlayElement.style.left = contentWorldRect.xMin - hostWorldRect.xMin - padding;
+            overlayElement.style.top = contentWorldRect.yMin - hostWorldRect.yMin - padding;
+            overlayElement.style.width = targetSize.x;
+            overlayElement.style.height = targetSize.y;
+            overlayElement.style.opacity = opacity;
+            overlayElement.style.visibility = visibility;
+            overlayElement.style.display = display == DisplayStyle.None ? DisplayStyle.None : DisplayStyle.Flex;
 
-            EnsureGlowMaterial();
-            EnsureGlowTexture(targetSize);
+            EnsureOverlayMaterial();
+            EnsureOverlayTexture(targetSize);
 
             var contentWidth = Mathf.Clamp(Mathf.CeilToInt(contentRect.width), 1, targetSize.x - padding * 2);
             var contentHeight = Mathf.Clamp(Mathf.CeilToInt(contentRect.height), 1, targetSize.y - padding * 2);
@@ -106,158 +96,36 @@ namespace Acfeel.UIToolkitLiteEffects
                 (padding + contentHeight) / (float)targetSize.y);
 
             var glowSourceTexture = sourceTexture != null ? sourceTexture : Texture2D.whiteTexture;
-            glowMaterial.SetTexture(MainTexId, glowSourceTexture);
-            glowMaterial.SetColor(GlowColorId, glow.Color);
-            glowMaterial.SetFloat(GlowStrengthId, glow.Strength);
-            glowMaterial.SetFloat(GlowSpreadId, glow.Spread);
-            glowMaterial.SetFloat(SourceAlphaMultiplierId, sourceAlphaMultiplier);
-            glowMaterial.SetFloat(DissolveEnabledId, dissolve.Enabled ? 1f : 0f);
-            glowMaterial.SetFloat(DissolveAmountId, dissolve.Amount);
-            glowMaterial.SetFloat(DissolveEdgeWidthId, dissolve.EdgeWidth);
-            glowMaterial.SetVector(TexelSizeId, new Vector4(1f / targetSize.x, 1f / targetSize.y, targetSize.x, targetSize.y));
-            glowMaterial.SetVector(ContentUvRectId, contentUvRect);
-            glowMaterial.SetVector(CornerRadiiId, cornerRadii);
-            glowMaterial.SetVector(RectSizeId, new Vector4(contentRect.width, contentRect.height, padding, 0f));
-            Graphics.Blit(glowSourceTexture, glowTexture, glowMaterial);
+            overlayMaterial.SetTexture(MainTexId, glowSourceTexture);
+            overlayMaterial.SetColor(GlowColorId, glow.Color);
+            overlayMaterial.SetFloat(GlowStrengthId, glow.Strength);
+            overlayMaterial.SetFloat(GlowSpreadId, glow.Spread);
+            overlayMaterial.SetFloat(SourceAlphaMultiplierId, sourceAlphaMultiplier);
+            overlayMaterial.SetFloat(DissolveEnabledId, dissolve.Enabled ? 1f : 0f);
+            overlayMaterial.SetFloat(DissolveAmountId, dissolve.Amount);
+            overlayMaterial.SetFloat(DissolveEdgeWidthId, dissolve.EdgeWidth);
+            overlayMaterial.SetVector(TexelSizeId, new Vector4(1f / targetSize.x, 1f / targetSize.y, targetSize.x, targetSize.y));
+            overlayMaterial.SetVector(ContentUvRectId, contentUvRect);
+            overlayMaterial.SetVector(CornerRadiiId, cornerRadii);
+            overlayMaterial.SetVector(RectSizeId, new Vector4(contentRect.width, contentRect.height, padding, 0f));
+            Graphics.Blit(glowSourceTexture, overlayTexture, overlayMaterial);
 
-            glowOverlayElement.style.backgroundImage = Background.FromRenderTexture(glowTexture);
-            glowOverlayElement.style.backgroundColor = StyleKeyword.Null;
+            overlayElement.style.backgroundImage = Background.FromRenderTexture(overlayTexture);
+            overlayElement.style.backgroundColor = StyleKeyword.Null;
             IsVisible = display != DisplayStyle.None;
         }
 
-        public void Hide()
+        public override void Hide()
         {
-            if (glowOverlayElement != null)
+            if (overlayElement != null)
             {
-                glowOverlayElement.style.display = DisplayStyle.None;
-                glowOverlayElement.style.backgroundImage = StyleKeyword.Null;
-                glowOverlayElement.style.backgroundColor = StyleKeyword.Null;
+                overlayElement.style.display = DisplayStyle.None;
+                overlayElement.style.backgroundImage = StyleKeyword.Null;
+                overlayElement.style.backgroundColor = StyleKeyword.Null;
             }
 
             IsVisible = false;
-            ReleaseGlowTexture();
+            ReleaseOverlayTexture();
         }
-
-        public void Detach()
-        {
-            Hide();
-            if (glowOverlayElement != null)
-            {
-                glowOverlayElement.RemoveFromHierarchy();
-            }
-
-            glowOverlayHost = null;
-        }
-
-        public void Dispose()
-        {
-            Hide();
-
-            if (glowMaterial != null)
-            {
-                UnityEngine.Object.DestroyImmediate(glowMaterial);
-                glowMaterial = null;
-            }
-
-            if (glowOverlayElement != null)
-            {
-                glowOverlayElement.RemoveFromHierarchy();
-                glowOverlayElement = null;
-            }
-
-            glowOverlayHost = null;
-        }
-
-        private void EnsureGlowElement()
-        {
-            if (glowOverlayElement != null)
-            {
-                return;
-            }
-
-            glowOverlayElement = new VisualElement
-            {
-                pickingMode = PickingMode.Ignore
-            };
-            glowOverlayElement.style.position = Position.Absolute;
-            glowOverlayElement.style.display = DisplayStyle.None;
-        }
-
-        private bool EnsureOverlayHost()
-        {
-            var parent = element.parent;
-            if (parent == null)
-            {
-                return false;
-            }
-
-            EnsureGlowElement();
-            if (glowOverlayElement.parent != parent)
-            {
-                glowOverlayElement.RemoveFromHierarchy();
-                parent.Insert(parent.IndexOf(element), glowOverlayElement);
-            }
-            else
-            {
-                var elementIndex = parent.IndexOf(element);
-                var overlayIndex = parent.IndexOf(glowOverlayElement);
-                if (overlayIndex >= elementIndex)
-                {
-                    glowOverlayElement.RemoveFromHierarchy();
-                    parent.Insert(elementIndex, glowOverlayElement);
-                }
-            }
-
-            glowOverlayHost = parent;
-            return true;
-        }
-
-        private void EnsureGlowMaterial()
-        {
-            if (glowMaterial != null)
-            {
-                return;
-            }
-
-            glowMaterial = new Material(glowShader)
-            {
-                hideFlags = HideFlags.HideAndDontSave
-            };
-        }
-
-        private void EnsureGlowTexture(Vector2Int targetSize)
-        {
-            if (glowTexture != null && glowTextureSize == targetSize)
-            {
-                return;
-            }
-
-            ReleaseGlowTexture();
-
-            glowTexture = new RenderTexture(targetSize.x, targetSize.y, 0, RenderTextureFormat.ARGB32)
-            {
-                name = "UIToolkitLiteEffects_GlowRT",
-                hideFlags = HideFlags.HideAndDontSave,
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear
-            };
-            glowTexture.Create();
-            glowTextureSize = targetSize;
-        }
-
-        private void ReleaseGlowTexture()
-        {
-            glowTextureSize = default;
-
-            if (glowTexture == null)
-            {
-                return;
-            }
-
-            glowTexture.Release();
-            UnityEngine.Object.DestroyImmediate(glowTexture);
-            glowTexture = null;
-        }
-
     }
 }
