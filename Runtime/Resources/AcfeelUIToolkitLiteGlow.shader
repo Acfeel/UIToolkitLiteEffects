@@ -80,6 +80,11 @@ Shader "Hidden/Acfeel/UIToolkitLiteGlow"
                     (uv.y - _ContentUvRect.y) / max(_ContentUvRect.w - _ContentUvRect.y, 0.0001));
             }
 
+            float GetGlowSpreadPixels(float normalizedSpread)
+            {
+                return saturate(normalizedSpread) * 4.0;
+            }
+
             float SampleRawAlpha(float2 uv)
             {
                 if (!IsInsideContent(uv))
@@ -119,11 +124,6 @@ Shader "Hidden/Acfeel/UIToolkitLiteGlow"
                 float rawAlpha = SampleRawAlpha(uv);
                 float glowAlpha = smoothstep(0.35, 0.85, rawAlpha);
                 return glowAlpha * SampleContentDissolveMask(uv);
-            }
-
-            float GetGlowSpreadPixels(float normalizedSpread)
-            {
-                return saturate(normalizedSpread) * 4.0;
             }
 
             float GetOutlineMask(float2 uv, float thickness)

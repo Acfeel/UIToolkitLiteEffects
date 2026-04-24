@@ -84,6 +84,21 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 return o;
             }
 
+            float GetOutlineThicknessPixels(float normalizedThickness)
+            {
+                return saturate(normalizedThickness) * 4.0;
+            }
+
+            float GetGlowSpreadPixels(float normalizedSpread)
+            {
+                return saturate(normalizedSpread) * 4.0;
+            }
+
+            float GetBlurRadiusPixels(float normalizedRadius)
+            {
+                return saturate(normalizedRadius) * 3.0;
+            }
+
             float3 ApplyContrast(float3 color, float contrast)
             {
                 return (color - 0.5) * contrast + 0.5;
@@ -108,19 +123,19 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 );
             }
 
-            float GetOutlineThicknessPixels(float normalizedThickness)
+            bool IsInsideContent(float2 uv)
             {
-                return saturate(normalizedThickness) * 4.0;
+                return uv.x >= _ContentUvRect.x
+                    && uv.y >= _ContentUvRect.y
+                    && uv.x <= _ContentUvRect.z
+                    && uv.y <= _ContentUvRect.w;
             }
 
-            float GetGlowSpreadPixels(float normalizedSpread)
+            float2 RemapContentUv(float2 uv)
             {
-                return saturate(normalizedSpread) * 4.0;
-            }
-
-            float GetBlurRadiusPixels(float normalizedRadius)
-            {
-                return saturate(normalizedRadius) * 3.0;
+                return float2(
+                    (uv.x - _ContentUvRect.x) / max(_ContentUvRect.z - _ContentUvRect.x, 0.0001),
+                    (uv.y - _ContentUvRect.y) / max(_ContentUvRect.w - _ContentUvRect.y, 0.0001));
             }
 
             float4 ApplyMode(float4 source, float4 target, float mode, float strength)
@@ -145,21 +160,6 @@ Shader "Hidden/Acfeel/UIToolkitLiteEffects"
                 p = frac(p * float2(123.34, 345.45));
                 p += dot(p, p + 34.345);
                 return frac(p.x * p.y);
-            }
-
-            bool IsInsideContent(float2 uv)
-            {
-                return uv.x >= _ContentUvRect.x
-                    && uv.y >= _ContentUvRect.y
-                    && uv.x <= _ContentUvRect.z
-                    && uv.y <= _ContentUvRect.w;
-            }
-
-            float2 RemapContentUv(float2 uv)
-            {
-                return float2(
-                    (uv.x - _ContentUvRect.x) / max(_ContentUvRect.z - _ContentUvRect.x, 0.0001),
-                    (uv.y - _ContentUvRect.y) / max(_ContentUvRect.w - _ContentUvRect.y, 0.0001));
             }
 
             float4 SampleSource(float2 uv)
