@@ -337,4 +337,4 @@ v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` �
 - 見た目のトラブルを調べるときは、LiteEffect が背景色や背景画像 tint を一時的に制御している前提で確認すると原因を追いやすくなります
 - `Glow` や `Outline` が有効な間は、見切れを防ぐために周辺描画領域の扱いも内部で調整します
 - `backgroundImage` の元画像を動的に差し替えた場合は `LiteEffectHandle.Refresh()` または再設定を呼ぶと確実です
-- `Glitch` は強度がある間だけ再描画を継続するため、通常利用では低めの値を推奨します
+- `Glitch` は `Intensity` が 0 より大きい間だけ再描画を継続するため、通常利用では低めの値を推奨します
