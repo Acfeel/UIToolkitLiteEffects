@@ -318,18 +318,12 @@ v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` �
 - `Dissolve EdgeColor`: `Color.clear` なら縁色を出さず、そのまま透明に抜けます
 - `Glitch Intensity`: `0..1`。低い値で短い揺れを足す用途を想定しています
 
-見た目確認用の目安としては次のくらいから始めると調整しやすいです。
-
-- `Outline Thickness`: `0.25`, `0.5`, `0.75`, `1.0`
-- `Glow Spread`: `0.25`, `0.5`, `0.75`, `1.0`
-- `Blur Radius`: `0.2`, `0.5`, `0.8`, `1.0`
-
 ## 使い分けのヒント
 
 - まずは 1 つの効果だけ試したい場合は、`SetGlow` などの単体 API がわかりやすく扱えます
 - 複数効果をまとめて管理したい場合は、`SetLiteEffect` にまとめると見通しがよくなります
 - 各エフェクトは `Enabled` を省略した場合でも、値が入ると自動で有効化されます
-- USS だけで制御したい場合は、`EnableLiteEffectFromUss()` を呼んでからカスタムプロパティを指定します
+- `EnableLiteEffectFromUss()` を呼ぶとコードを無効化しUSSのみで操作するモードになります
 
 ## 副作用と既知の挙動
 
