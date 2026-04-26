@@ -11,6 +11,8 @@ https://unityroom.com/games/uitoolkit-lite-effects
 
 正式なサポート対象は背景描画ベースの要素のみです。画像にエフェクトを適用したい場合は、`backgroundImage` を持つ `VisualElement` を使用してください。
 
+角丸には正式対応していません。
+
 このパッケージは開発中です。今後の更新で API や挙動に破壊的な変更が入る可能性があります。
 
 ## 特徴
@@ -62,6 +64,18 @@ icon.SetColorAdjust(new ColorAdjustSettings
 });
 ```
 
+### Colorize
+
+元の画像のアルファを保持しつつ、RGB を指定した一色に置き換えます。Strength=1 で完全に一色になり、0 に近づくほど元の色に戻ります。
+
+```csharp
+icon.SetColorize(new ColorizeSettings
+{
+    Color = Color.red,
+    Strength = 1f
+});
+```
+
 ### Gradient
 
 `Mode` を省略した場合は `LiteEffectBlendMode.Replace` が使われ、グラデーション色でそのまま置き換えます。
@@ -88,6 +102,7 @@ icon.SetOutline(new OutlineSettings
 ```
 
 ### Glow
+bloomを利用したものではなく、要素外周へはみ出す軽量な発光オーバーレイです。
 
 ```csharp
 icon.SetGlow(new GlowSettings
@@ -99,6 +114,7 @@ icon.SetGlow(new GlowSettings
 ```
 
 ### Blur
+背景を本当にぼかすガラス表現ではなく、要素内容をやわらかくするものです。
 
 ```csharp
 icon.SetBlur(new BlurSettings
@@ -128,18 +144,6 @@ icon.SetGlitch(new GlitchSettings
     Jitter = 0.45f,
     ColorShift = 0.35f,
     ScanlineStrength = 0.25f
-});
-```
-
-### Colorize
-
-元の画像のアルファを保持しつつ、RGB を指定した一色に置き換えます。Strength=1 で完全に一色になり、0 に近づくほど元の色に戻ります。
-
-```csharp
-icon.SetColorize(new ColorizeSettings
-{
-    Color = Color.red,
-    Strength = 1f
 });
 ```
 
@@ -334,9 +338,3 @@ v1 の Tween API は `SetEase` `SetDelay` `OnComplete` `Append` `Join` `Kill` �
 - `Glow` や `Outline` が有効な間は、見切れを防ぐために周辺描画領域の扱いも内部で調整します
 - `backgroundImage` の元画像を動的に差し替えた場合は `LiteEffectHandle.Refresh()` または再設定を呼ぶと確実です
 - `Glitch` は強度がある間だけ再描画を継続するため、通常利用では低めの値を推奨します
-
-## 制約
-
-- 角丸には正式対応していません
-- `Glow` は bloom ではなく、要素外周へはみ出す軽量な発光オーバーレイです
-- `Blur` は背景を本当にぼかすガラス表現ではなく、要素内容をやわらかくする近似です
