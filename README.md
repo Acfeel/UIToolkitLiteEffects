@@ -1,6 +1,9 @@
 # UIToolkitLiteEffects
 
-Unity UI Toolkit 向けの軽量ビジュアルエフェクトパッケージです。`VisualElement` や `backgroundImage` を持つ要素に対して、色調補正、着色、グラデーション、簡易ブレンド、疑似アウトライン、グロー、疑似ブラー、ディゾルブ、グリッチをコードまたは USS カスタムプロパティから適用できます。
+Unity UI Toolkit 向けの軽量ビジュアルエフェクトパッケージのサンプルプロジェクトです。VisualElementに対して色調補正、着色、グラデーション、アウトライン、疑似グロー、ブラー、ディゾルブ、グリッチをコードまたは USS カスタムプロパティから適用できます。
+
+## サンプルプロジェクト
+https://unityroom.com/games/uitoolkit-lite-effects
 
 ## 注意
 
